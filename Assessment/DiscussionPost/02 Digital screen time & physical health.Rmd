@@ -1,0 +1,84 @@
+---
+title: "Discussion Post - Assignment - Obesity & Mental Health"
+author: "Ahmed SOROUR"
+date: "2024-01-27"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+# Investigating the Role of Physical Activity in Diabetes Management
+
+Diabetes management is multifaceted, involving diet, medication, and lifestyle modifications. Among these, physical activity plays a crucial role. This analysis delves into the NHANES dataset to explore the correlation between physical activity and key health indicators—BMI and blood pressure—in individuals diagnosed with diabetes.
+
+The data was filtered to include diabetic individuals, providing insights into how active and less active lifestyles impact BMI and blood pressure. The analysis revealed that physically active diabetic individuals tend to have lower BMI and blood pressure levels compared to their less active counterparts, suggesting the potential benefits of physical activity in managing diabetes-related health risks.
+
+Visualizations further illustrate these findings, with box plots showcasing a clear distinction in BMI and average blood pressure between active and inactive individuals. Active individuals generally displayed a healthier BMI range and more favorable blood pressure levels, underlining the importance of regular physical activity.
+
+These findings underscore the significance of incorporating physical activity into diabetes management plans. Regular physical activity not only aids in maintaining a healthier BMI but also contributes to better blood pressure control, which is vital in reducing cardiovascular risks associated with diabetes. Healthcare professionals and diabetic individuals should prioritize physical activity as a key component of diabetes care, tailoring exercise regimens to individual capabilities and health conditions to optimize outcomes.
+
+This analysis highlights the tangible benefits of physical activity in diabetes management, advocating for a more active lifestyle as part of comprehensive diabetes care.
+
+
+
+
+### Loading Libaries
+```{r loading libaries}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(NHANES)
+```
+
+### TotalScreenTime, assuming TVHrsDay and CompHrsDay are in hours.
+```{r }
+df <- as.data.frame(NHANES)
+diabetes_df <- df %>% 
+  filter(Diabetes == "Yes") %>%
+  filter(!is.na(PhysActive))  # Ensure physical activity data is available
+
+summary_table <- diabetes_df %>%
+  group_by(PhysActive) %>%
+  summarise(
+    MeanBMI = mean(BMI, na.rm = TRUE),
+    MeanSysBP = mean(BPSysAve, na.rm = TRUE),
+    MeanDiaBP = mean(BPDiaAve, na.rm = TRUE)
+  )
+
+print(summary_table)
+
+
+```
+
+
+```{r}
+library(ggplot2)
+
+ggplot(diabetes_df, aes(x = PhysActive, y = BMI, fill = PhysActive)) +
+  geom_boxplot() +
+  labs(title = "BMI Distribution by Physical Activity Among Diabetic Individuals",
+       x = "Physical Activity", y = "BMI") +
+  theme_minimal()
+
+
+```
+```{r}
+
+# Averaging systolic and diastolic blood pressure for simplicity
+diabetes_df$AvgBP <- (diabetes_df$BPSysAve + diabetes_df$BPDiaAve) / 2
+
+ggplot(diabetes_df, aes(x = PhysActive, y = AvgBP, fill = PhysActive)) +
+  geom_boxplot() +
+  labs(title = "Average Blood Pressure by Physical Activity Among Diabetic Individuals",
+       x = "Physical Activity", y = "Average Blood Pressure") +
+  theme_minimal()
+
+
+```
+
