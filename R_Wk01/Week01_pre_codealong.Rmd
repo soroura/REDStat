@@ -1,0 +1,48 @@
+---
+title: "Introduction to Statistics"
+author: "Week 1 codealong"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Task 1
+
+Load libraries: tidyverse and NHSRdatasets
+
+## Task 2
+
+Load and explore the LOS_model dataset
+
+## Task 3
+
+Let's change the Death variable into a factor, so it has meaningful categories, with labels "Survived" and "Died."
+
+## Task 4
+
+Use the summary() function to calculate descriptive statistics for the dataset. Use the sd() function to calculate standard deviation.
+
+## Task 5
+
+Plot a histogram of Age in the sample.
+
+## Task 6
+
+Create a box plot of the age distribution in the data. 
+
+## Task 7
+
+Produce a bar chart of how many patients survived and died in each trust.
+
+## Task 8
+
+Produce a table of the number of patients in each trust who died in hospital.
+
+## Task 9
+
+Let's create scatterplot of the relationship between length of stay in hospital and age. 
+
+

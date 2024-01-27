@@ -1,0 +1,132 @@
+---
+title: "Introduction to Statistics"
+author: "Week 1 codealong"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Task 1
+
+Load libraries: tidyverse and NHSRdatasets
+
+```{r task1}
+library(tidyverse)
+library(NHSRdatasets)
+
+install.packages("NHSRdatasets")
+```
+
+
+## Task 2
+
+Load and explore the LOS_model dataset
+
+```{r task2}
+data("LOS_model")
+?LOS_model
+head(LOS_model)
+?head
+head(LOS_model, n = 3)
+```
+
+
+## Task 3
+
+Let's change the Death variable into a factor, so it has meaningful categories, with labels "Survived" and "Died."
+
+```{r task3}
+LOS_model <- LOS_model %>%
+  mutate(Death = factor(as.character(Death), labels = c("Survived", "Died")))
+
+head(LOS_model)
+```
+
+
+## Task 4
+
+Use the summary() function to calculate descriptive statistics for the dataset. Use the sd() function to calculate standard deviation.
+
+```{r task4}
+summary(LOS_model)
+sd(LOS_model$Age)
+sd(LOS_model$LOS)
+```
+
+
+## Task 5
+
+Plot a histogram of Age in the sample.
+
+```{r task5}
+LOS_model %>%
+  ggplot(aes(x = Age)) +
+  geom_histogram()
+
+LOS_model %>%
+  ggplot(aes(x = Age)) +
+  geom_histogram(binwidth = 5, boundary = 5) +
+  scale_x_continuous(breaks = seq(5, 100, by = 5)) +
+  labs(title = "Distribution of age in the LOS dataset")
+```
+
+
+## Task 6
+
+Create a box plot of the age distribution in the data. 
+
+```{r task6}
+LOS_model %>%
+  ggplot(aes(y = Age)) +
+  geom_boxplot() +
+  labs(title = "Distribution of age in the LOS dataset")
+
+LOS_model %>%
+  ggplot(aes(x = Organisation, y = Age)) +
+  geom_boxplot() +
+  labs(title = "Distribution of age in the LOS dataset, by trust")
+```
+
+
+## Task 7
+
+Produce a bar chart of how many patients survived and died in each trust.
+
+```{r task7}
+LOS_model %>%
+  ggplot(aes(x = Organisation, fill = Death)) +
+  geom_bar(position = "stack") +
+  scale_fill_manual(values = c("gray", "red")) +
+  labs(title = "Patient outcomes across the NHS trusts",
+       fill = "Patient outcome")
+```
+
+
+## Task 8
+
+Produce a table of the number of patients in each trust who died in hospital.
+
+```{r task8}
+LOS_model %>%
+  group_by(Organisation, Death) %>%
+  tally() %>%
+  filter(Death == "Died")
+```
+
+
+## Task 9
+
+Let's create scatterplot of the relationship between length of stay in hospital and age. 
+
+```{r task9}
+LOS_model %>%
+  ggplot(aes(x = Age, y = LOS, colour = Death)) +
+  geom_point() +
+  labs(title = "Relationship between age and length of stay")
+```
+
+
+

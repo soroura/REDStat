@@ -1,0 +1,72 @@
+---
+title: "Discussion Post - Assignment - Obesity & Mental Health"
+author: "Ahmed SOROUR"
+date: "2024-01-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#  Discussion Post 
+
+I am going to explore the link between Obesity  BMI and Mental Health 
+
+In this analysis, I went through the NHANES dataset to see patterns between obesity in the form of BMI and if there is a relation with the self-reported days of poor mental health.  The relationship  between physical and mental health is important and need to see if it can be related and can affect the mental health or not.  
+
+Upon examining the NHANES data, I categorized BMI into standard groups: Underweight, Normal, Overweight, and Obese. I then compared these groups with the self-reported number of days participants felt their mental health was poor. This exploration is grounded in the hypothesis that higher BMI categories may correlate with more frequent reports of poor mental health days, possibly due to factors like societal stigma and the physical discomforts associated with obesity.
+
+For visualization, I created a box plot to depict the distribution of poor mental health days across BMI categories, providing a clear visual summary of the central tendency and variability. Additionally, a table summarizing mean and median days of poor mental health across BMI groups offered a precise numerical understanding.
+
+This investigation not only sheds light on the potential psychological impacts of BMI but also underscores the importance of integrating mental health considerations into obesity prevention and treatment strategies. Reflecting on the process, the choice of variables was critical; it required a thoughtful balance between relevance and the robustness of available data. The analysis reaffirms the complex interplay between physical and mental health, advocating for a holistic approach in public health initiatives.
+
+
+
+```{r task1}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(NHANES)
+
+df <- as.data.frame(NHANES)
+
+df$BMI_WHO <- as.factor(df$BMI_WHO)
+df$DaysMentHlthBad <- as.numeric(df$DaysMentHlthBad)
+df_clean <- na.omit(df[, c("BMI_WHO", "DaysMentHlthBad")])
+
+table_summary <- df_clean %>% 
+  group_by(BMI_WHO) %>% 
+  summarise(MeanDays = mean(DaysMentHlthBad, na.rm = TRUE),
+            MedianDays = median(DaysMentHlthBad, na.rm = TRUE), 
+            Count = n())
+print(table_summary)
+summary(df_clean)
+
+ggplot(df_clean, aes(x = BMI_WHO, y = DaysMentHlthBad, fill = BMI_WHO)) +
+  geom_boxplot() +
+  labs(title = "Days of Poor Mental Health by BMI Category",
+       x = "BMI Category",
+       y = "Days of Poor Mental Health") +
+  theme_minimal() +
+  theme(legend.position = "none")  # Optional: Remove the legend if it's redundant
+
+library(ggplot2)
+# Assuming df is your cleaned dataset with BMI categories and DaysMentHlthBad variables
+ggplot(df, aes(x = BMI_WHO, y = DaysMentHlthBad, fill = BMI_WHO)) +
+  geom_boxplot() +
+  labs(title = "Days of Poor Mental Health by BMI Category",
+       x = "BMI Category",
+       y = "Days of Poor Mental Health") +
+  theme_minimal()
+
+library(dplyr)
+df %>% 
+  group_by(BMI_WHO) %>% 
+  summarise(MeanDays = mean(DaysMentHlthBad, na.rm = TRUE),
+            MedianDays = median(DaysMentHlthBad, na.rm = TRUE),
+            Count = n())
+
+
+```
+
