@@ -1,0 +1,106 @@
+---
+title: "Discussion Post - Assignment - Obesity & Mental Health"
+author: "Ahmed SOROUR"
+date: "2024-01-27"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: paper
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+#  Discussion Post 
+
+In this NHANES dataset analysis, I explored the relationship between Body Mass Index (BMI) categories and self-reported days of poor mental health, recognizing the significance of understanding the connection between physical and mental well-being. Utilizing BMI_WHO classifications (Underweight, Normal, Overweight, and Obese), I examined how different BMI groups relate to the frequency of reported poor mental health days within the last 30 days. The hypothesis was that higher BMI categories might correlate with more frequent reports of poor mental health, potentially influenced by societal stigma and physical discomfort associated with obesity.
+
+To visually represent the distribution of poor mental health days across BMI categories, I created a box plot, providing a concise summary of central tendency and variability. Additionally, a table presenting mean and median days of poor mental health across BMI groups offered numerical insights.
+
+This investigation not only highlights potential psychological impacts of BMI but emphasizes the need to integrate mental health considerations into obesity prevention and treatment strategies. The choice of variables played a crucial role, requiring a balance between relevance and available data robustness. The analysis underscores the intricate interplay between physical and mental health, advocating for a holistic approach in public health initiatives. Overall, the study contributes to understanding the complex relationship between BMI and mental health, prompting thoughtful consideration in health interventions.
+
+
+
+```{r task1}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(NHANES)
+library(knitr)
+library(kableExtra)
+# install.packages("tably")
+# library(tably)
+
+df <- as.data.frame(NHANES)
+
+df$BMI_WHO <- as.factor(df$BMI_WHO)
+df$DaysMentHlthBad <- as.numeric(df$DaysMentHlthBad)
+df_clean <- na.omit(df[, c("BMI_WHO", "DaysMentHlthBad", "BMI")])
+
+
+
+
+library(ggplot2)
+# Assuming df is your cleaned dataset with BMI categories and DaysMentHlthBad variables
+ggplot(df_clean, aes(x = BMI_WHO, y = DaysMentHlthBad, fill = BMI_WHO)) +
+  geom_boxplot() +
+  labs(title = "Days of Poor Mental Health by BMI Category",
+       x = "BMI Category",
+       y = "Days of Poor Mental Health") +
+  theme_minimal() +
+  coord_cartesian(ylim = c(0, 10))
+
+
+```
+
+```{r}
+table_summary <- df_clean %>% 
+  group_by(BMI_WHO) %>% 
+  summarise(MeanDays = mean(DaysMentHlthBad, na.rm = TRUE),
+            # MedianDays = median(DaysMentHlthBad, na.rm = TRUE), 
+            Count = n())
+print(table_summary)
+# summary(df_clean)
+
+# Create a styled table
+styled_table <- kable(table_summary, format = "html", caption = "Summary Table") %>%
+  kable_styling("striped", full_width = FALSE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "#0073C2")
+
+# Print the styled table
+print(styled_table)
+
+```
+
+```{r}
+
+# library(dplyr)
+# df %>% 
+#   group_by(BMI_WHO) %>% 
+#   summarise(MeanDays = mean(DaysMentHlthBad, na.rm = TRUE),
+#             MedianDays = median(DaysMentHlthBad, na.rm = TRUE),
+#             Count = n())
+
+# names(NHANES)
+# 
+# library(ggplot2)
+# # Assuming df is your cleaned dataset with BMI categories and DaysMentHlthBad variables
+# df_clean %>%
+#   ggplot(aes(x = BMI, y = DaysMentHlthBad)) +
+#   geom_point() +
+#   geom_smooth(method=lm, se=TRUE)
+
+
+# ggplot(df_clean, aes(x = BMI_WHO, y = DaysMentHlthBad, fill = BMI_WHO)) +
+#   geom_boxplot() +
+#   labs(title = "Days of Poor Mental Health by BMI Category",
+#        x = "BMI Category",
+#        y = "Days of Poor Mental Health") +
+#   theme_minimal() +
+#   theme(legend.position = "none")  # Optional: Remove the legend if it's redundant
+
+
+```
+

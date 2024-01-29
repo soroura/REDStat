@@ -36,7 +36,6 @@ library(ggplot2)
 library(NHANES)
 ```
 
-### TotalScreenTime, assuming TVHrsDay and CompHrsDay are in hours.
 ```{r }
 df <- as.data.frame(NHANES)
 diabetes_df <- df %>% 

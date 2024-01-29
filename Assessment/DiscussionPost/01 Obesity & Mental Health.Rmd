@@ -37,7 +37,7 @@ df <- as.data.frame(NHANES)
 
 df$BMI_WHO <- as.factor(df$BMI_WHO)
 df$DaysMentHlthBad <- as.numeric(df$DaysMentHlthBad)
-df_clean <- na.omit(df[, c("BMI_WHO", "DaysMentHlthBad")])
+df_clean <- na.omit(df[, c("BMI_WHO", "DaysMentHlthBad", "BMI")])
 
 table_summary <- df_clean %>% 
   group_by(BMI_WHO) %>% 
@@ -70,6 +70,15 @@ df %>%
   summarise(MeanDays = mean(DaysMentHlthBad, na.rm = TRUE),
             MedianDays = median(DaysMentHlthBad, na.rm = TRUE),
             Count = n())
+
+names(NHANES)
+
+library(ggplot2)
+# Assuming df is your cleaned dataset with BMI categories and DaysMentHlthBad variables
+df_clean %>%
+  ggplot(aes(x = BMI, y = DaysMentHlthBad)) +
+  geom_point() +
+  geom_smooth(method=lm, se=TRUE)
 
 
 ```

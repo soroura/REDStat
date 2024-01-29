@@ -1,0 +1,19 @@
+---
+title: "REDStat Code Snippets"
+author: "Ahmed SOROUR"
+date: "2024-01-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(BDSA)
+library(ggplot2)
+```
+
