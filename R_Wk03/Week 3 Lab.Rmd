@@ -1,0 +1,43 @@
+---
+title: "Week 3 Lab"
+author: "Christopher A Oldnall"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Package and Data Loading
+
+In this lab, we will use the familiar NHAHES dataset to further practice running hypothesis tests. For this we will initially load in the data and packages necessary. This is the NHANES data set and also tidyverse and BSDA.
+
+```{r PackageDataLoading, message=FALSE}
+
+```
+
+## Exercise 1
+
+Explore the relationship between education level and home ownership. Are people with different levels of education all equally likely to own their homes? Use the Education and HomeOwn variables from the NHANES dataset.
+
+```{r Exercise1, echo=FALSE}
+
+```
+
+
+## Exercise 2
+The minimum recommended amount of sleep for adults is 7 hours. Use the appropriate hypothesis test to check whether the average sleep time is significantly different from 7 hours, based on data from NHANES. 
+
+```{r Exercise2, echo=FALSE}
+
+```
+
+## Exercise 3
+There is evidence that people who are physically active tend to have better mental health. Test this hypothesis using the NHANES data:
+- Run a test to check whether people who are physically active, also report fewer days when their mental health was not good.
+- Write an interpretation of the results.
+Use the PhysActive and DaysMentHlthBad variables from the NHANES dataset.
+
+```{r Exercise3, echo=FALSE}
+
+```

@@ -1,0 +1,48 @@
+---
+title: "Assessment v1"
+author: "Ahmed SOROUR"
+date: "2024-02-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+
+# Load data 
+
+```{r}
+library(tidyverse)
+
+#load data
+carehome_data <- read.csv("carehomedata_assessment2024.csv")
+head(carehome_data)
+
+demographic_summary <- carehome_data %>%
+  select(participant_id, sex, age_at_recording, BMI, carehome_id) %>%
+  summary()
+
+# Print the summary table
+print(demographic_summary)
+
+# Generate a graph for Age Distribution
+age_distribution <- ggplot(carehome_data, aes(x = age_at_recording)) +
+  geom_histogram(binwidth = 5, fill = "skyblue", color = "black") +
+  labs(title = "Age Distribution of Participants",
+       x = "Age at Recording",
+       y = "Frequency") +
+  theme_minimal()
+
+# Print the graph
+print(age_distribution)
+
+# Conduct a t-test to compare BMI between the two care homes if applicable
+t_test_results <- t.test(BMI ~ carehome_id, data = carehome_data)
+
+# Print t-test results
+print(t_test_results)
+
+
+```
+

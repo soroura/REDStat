@@ -6,14 +6,747 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, messages=FALSE, warning = FALSE)
 ```
 
 
 ```{r}
+install.packages("BDSA")
 library(tidyverse)
 library(dplyr)
 library(BDSA)
 library(ggplot2)
+```
+## WEEK 5 
+### wk05_t01
+Correlation coefficients 
+
+summarise(correlation = cor(Weight, Height, use = "complete.obs")): The summarise function collapses the dataset into a single summary value per group (or the entire dataset if not grouped). Here, it's used to calculate a single summary statistic:
+
+correlation =: This part assigns the result of the correlation computation to a new summary variable called correlation.
+
+cor(Weight, Height, use = "complete.obs"): The cor function calculates Pearson's correlation coefficient between two variables. In this case, it calculates the correlation between Weight and Height. 
+
+**The use = "complete.obs" ** argument specifies that the calculation should use only complete pairs of observations. This means that any rows with missing (NA) values for either Weight or Height are excluded from the correlation computation.
+
+pull(Weight): **The pull function is used to extract just the Weight column from the filtered dataset. This function returns a vector** containing the values of the Weight column for the filtered subset of the data (i.e., male individuals aged 18 and above).
+
+**Output: The output of cor.test() includes several important pieces of information:**   
+
+The Pearson correlation coefficient (r), which quantifies the degree of linear association between the two variables. Its value ranges from -1 to 1, where -1 indicates a perfect negative linear relationship, 1 indicates a perfect positive linear relationship, and 0 indicates no linear relationship.
+The p-value, which indicates the probability of observing the data (or something more extreme) assuming the null hypothesis is true. A small p-value (typically ≤ 0.05) suggests that the observed correlation is unlikely to have occurred by chance, leading to the rejection of the null hypothesis.
+The confidence interval for the correlation coefficient, which provides a range of values within which the true correlation coefficient is likely to fall, with a certain level of confidence (usually 95%).
+
+The result you've provided is from a Pearson's product-moment correlation test conducted between two variables, presumably Weight and Height. Here's a breakdown of what each part of the output means:
+
+**Test Type:** "Pearson's product-moment correlation" indicates the type of correlation test that was conducted. This test measures the linear relationship between two continuous variables.
+
+**Data:** "data: Weight and Height" specifies the two variables involved in the correlation analysis.
+
+**Test Statistic (t): "t = 25.711" **represents the value of the test statistic used in testing the hypothesis about the correlation. This value is calculated based on the sample correlation coefficient and the sample size, and it is used to determine the p-value.
+
+**Degrees of Freedom (df): "df = 3649" **indicates the degrees of freedom for the test, which is related to the number of data points involved in the analysis. In correlation tests, the degrees of freedom are typically the number of data pairs minus 2.
+
+**P-value: "p-value < 2.2e-16" **signifies the probability of observing a correlation as strong as the one in your data (or stronger) if **the null hypothesis of no correlation (correlation coefficient = 0) were true.** A p-value this small (less than the smallest number representable in standard statistical software, which is often 2.2e-16) **indicates extremely strong evidence against the null hypothesis, leading to its rejection.**
+
+Alternative Hypothesis: "alternative hypothesis: true correlation is not equal to 0" states the hypothesis being tested against the null hypothesis. In this case, it suggests that the actual correlation between Weight and Height is different from zero.
+
+95 Percent Confidence Interval: "0.3638145 0.4187508" provides the range within which the true population correlation coefficient is likely to fall, with 95% confidence. This interval does not include zero, which further supports the conclusion that there is a significant correlation between the variables.
+
+Sample Estimates: "cor 0.3916316" reports the sample correlation coefficient between Weight and Height, which is approximately 0.392. This value indicates a moderate positive linear relationship between the two variables; as one variable increases, the other tends to increase as well, and about 39% of the variability in one variable is associated with the variability in the other.
+
+In summary, the test results provide strong evidence of a significant positive linear relationship between Weight and Height, with a moderate correlation coefficient of approximately 0.392.
+
+
+
+
+```{r  corelation coefficients }
+
+# Take the NHANES dataset, then filter to keep only adult males, then create a scatter plot of Weight against Height
+NHANES %>%
+  filter(Gender == "male", Age >= 18) %>%
+  ggplot(aes(x = Height, y = Weight)) + 
+  geom_point() + 
+  xlab("Height (cm)") + 
+  ylab("Weight (kg)")
+
+# Using the same dataset as for the scatterplot, we use the summarise function to calculate the Pearson's correlation coefficient
+NHANES %>%
+  filter(Gender == "male", Age >= 18) %>%
+  summarise(correlation = cor(Weight, Height, use = "complete.obs"))
+
+# Get the results for the statistical test for the correlation coefficient
+Weight <- NHANES %>%
+  filter(Gender == "male", Age >= 18) %>%
+  pull(Weight)
+
+Height <- NHANES %>%
+  filter(Gender == "male", Age >= 18) %>%
+  pull(Height)
+
+cor.test(Weight,Height)
+
+```
+
+
+
+### WK05_T02
+create tibble -  this is to calcuate coefficients - in tow ways  -  tibble x&y  
+```{r create tibble}
+# Set the sample dataset of 8 pairs of x and y values.
+x<-c(3,17,6,19,2,13,16,10)
+y<-c(4,17,7,23,19,12,21,15)
+sample<-tibble(x=x,y=y)
+
+# View the dataset
+sample
+View(sample)
+```
+
+```{r pearson product & spearman  }
+# Create a scatterplot of the dataset
+sample %>% ggplot(aes(x = x, y = y)) + 
+  geom_point()
+
+## Steps to calculate  Pearson's correlation coefficient
+# Mean and standard deviation of x and y
+sumsPearson <- sample %>% summarise(meanx = mean(x), meany = mean(y),stdevx = sd(x), stdevy = sd(y))
+
+# Differences between value and mean for each x and each y
+calcPearson <- sample %>%
+  summarise(
+    diffx = x-sumsPearson$meanx,
+    diffy = y-sumsPearson$meany)
+
+# Divide these vectors by the standard deviation
+calcPearson <- calcPearson %>%
+  mutate(
+    diff_sd_x = diffx/sumsPearson$stdevx,
+    diff_sd_y = diffy/sumsPearson$stdevy)
+
+# Calculate the product of each value for the above vectors
+calcPearson <- calcPearson %>%
+  mutate(
+    products = diff_sd_x*diff_sd_y)
+    
+# Sum these products
+sumsPearson <- sumsPearson %>% mutate(sumprods = sum(calcPearson$products))
+
+# Divide by (n-1) to get Pearson's coefficient, here is we will use the length of the x vector as n
+sumsPearson <- sumsPearson %>% mutate(Pearson_r = sumprods/(length(x)-1))
+
+# View the tibbles we created
+calcPearson
+sumsPearson
+
+View(calcPearson)
+View(sumsPearson)
+
+## Steps to calculate  Spearman's correlation coefficient
+# Calculate the rank of each value of x and y
+calcSpearman <- sample %>% mutate(rankx = min_rank(x), ranky = min_rank(y))
+
+# Calculate the difference between ranks for each pair of values
+calcSpearman <- calcSpearman %>% mutate(diffrank = rankx - ranky)
+
+# Square that difference
+calcSpearman <- calcSpearman %>% mutate(squarediffrank = diffrank^2)
+
+# Sum all squared differences
+sumsSpearman <- calcSpearman %>% summarise(sumsquarediff = sum(squarediffrank))
+
+# Multiply by 6/n(n2-1)
+sumsSpearman <- sumsSpearman %>% mutate(sumsquarediffmultiplied = sumsquarediff*6/(length(x)*(length(x)^2-1)))
+
+# Subtract this number from 1 to get Spearman's coefficient
+sumsSpearman <- sumsSpearman %>% mutate(Spearman_rho = 1-sumsquarediffmultiplied)
+
+# View the tibbles we created
+calcSpearman
+sumsSpearman
+
+View(calcSpearman)
+View(sumsSpearman)
+
+# Hypothesis testing: t-test on Pearson's correlation coefficient
+# t <- sumsPearson$Pearson_r*sqrt((length(x)-2)/(1-(sumsPearson$Pearson_r)^2))
+
+# SHORTCUT: We can make use of R's cor.test() function to avoid all the steps above!
+# Calculate Pearson's correlation coefficient and p-value (default method)
+cor.test(x,y)
+# This function gives us all at once:
+## the method and data used for the test,
+## the test statistic, the number of degrees of freedom, the p-value,
+## and then the confidence interval and the correlation coefficient.
+
+# Calculate Spearman's correlation coefficient
+cor.test(x,y,method="spearman")
+
+```
+
+
+
+
+### WK05_TO3
+
+```{r W5_T3_simple_linear_regression}
+# Take the NHANES dataset, then filter to keep only adult males, then create a scatter plot of Weight against Height
+NHANES %>%
+  filter(Gender == "male", Age >= 18) %>%
+  ggplot(aes(x = Height, y = Weight)) + 
+  geom_point() + 
+  xlab("Height (cm)") + 
+  ylab("Weight (kg)")
+
+# Plot a positive regression line
+data <- tibble(y=c(8, 9, 10, 9, 11, 14, 15, 13, 14, 15, 17, 16, 19, 18, 20, 21),
+                   x=c(0, 1, 2, 2, 3, 4, 4, 5, 6, 6, 8, 9, 9, 11, 12, 12))
+
+png("regression_line.png",width = 165, height = 75, units='mm', res = 300)
+ggplot(data,aes(x, y)) +
+  geom_point() +
+  geom_smooth(method='lm', se=FALSE, color='turquoise4') +
+  xlim(0,12.5) +
+  theme_bw() +
+  labs(x='X Values', y='Y Values')
+dev.off()
+
+# Fit a linear regression model to the data
+lmodel <- lm(y ~ x, data = data)
+
+# Plot the positive regression line with residuals
+intercept <- lmodel$coefficients[1]
+slope <- lmodel$coefficients[2]
+data$fitted <- intercept + slope * data$x
+
+png("regression_line_residuals.png",width = 165, height = 75, units='mm', res = 300)
+ggplot(data, aes(x = x, y = y)) +
+  geom_abline(slope = slope, intercept = intercept, color = "turquoise4",size=1) +
+  geom_segment(aes(xend = x, yend = fitted, color = "resid",size=1)) +
+  scale_size_identity() +
+  geom_point() +
+  theme_bw() +
+  theme(legend.position="none") +
+  labs(x='X Values', y='Y Values') +
+  scale_color_manual(values = c(resid = "darkred"), labels = c(resid = "residuals"))
+dev.off()
+```
+
+
+
+### WK05_TO4  Statistical inference for regression
+
+Understanding Linear Models
+* A linear model encapsulates the relationship between two variables, often denoted as the explanatory (predictor) variable X and the response variable Y.
+* The model itself does not imply causation and should be interpreted with caution to avoid making inferences beyond the observed data range.
+Components of a Linear Model
+* Slope (β): Indicates the change in the response variable Y for a unit change in the explanatory variable X. A positive slope suggests an increasing trend, while a negative slope indicates a decreasing trend.
+* Intercept: Represents the value of Y when X is zero. It's the starting point of the line on the Y-axis.
+Model Output in R
+*  When running a linear regression in R, the output includes the intercept and slope estimates. These values are crucial for understanding the direction and steepness of the line of best fit.
+Interactive Visualization
+*  Engaging with interactive tools can deepen understanding by allowing manipulation of data points and observing changes in slope, intercept, and residuals.
+Evaluating Model Quality
+* The regression output provides several key statistics for each coefficient (slope and intercept):
+* Standard Error: Reflects the precision of the coefficient estimate.
+* T-Value: Measures how many standard deviations the coefficient is from zero.
+* P-Value: Indicates the probability of observing the given result if the null hypothesis (coefficient equals zero) is true.
+* 95% Confidence Interval: A range likely to contain the true coefficient value. Narrow intervals that do not include zero suggest a significant relationship.
+Residual Analysis
+* Residuals, the differences between observed and predicted values, should ideally be symmetrically distributed around zero. The residual standard error quantifies the average deviation from the regression line, with smaller values indicating a better fit.
+Model Fit Indicators
+*  Adjusted R-Squared: Represents the proportion of variance in the response variable explained by the predictor. Values closer to one indicate a better model fit.
+
+```{r WK05_TO4  Statistical inference for regression}
+
+# Plot a positive regression line
+data <- tibble(y=c(8, 9, 10, 9, 11, 14, 15, 13, 14, 15, 17, 16, 19, 18, 20, 21),
+               x=c(0, 1, 2, 2, 3, 4, 4, 5, 6, 6, 8, 9, 9, 11, 12, 12))
+
+png("regression_line.png",width = 165, height = 75, units='mm', res = 300)
+ggplot(data,aes(x, y)) +
+  geom_point() +
+  geom_smooth(method='lm', se=FALSE, color='turquoise4') +
+  xlim(0,12.5) +
+  theme_bw() +
+  labs(x='X Values', y='Y Values')
+dev.off()
+
+# Plot a negative regression line
+data <- tibble(y=c(21,20,18,19,16,17,15,14,13,15,14,11,9,10,9,8),
+               x=c(0, 1, 2, 2, 3, 4, 4, 5, 6, 6, 8, 9, 9, 11, 12, 12))
+
+png("regression_line_negative.png",width = 165, height = 75, units='mm', res = 300)
+ggplot(data,aes(x, y)) +
+  geom_point() +
+  geom_smooth(method='lm', se=FALSE, color='turquoise4') +
+  xlim(0,12.5) +
+  theme_bw() +
+  labs(x='X Values', y='Y Values')
+dev.off()
+
+# Fit a linear model to the data
+lmodel <- lm(y ~ x, data = data)
+lmodel$coefficients
+summary(lmodel)
+confint(lmodel)
+
+```
+
+
+
+
+### WK05_T05
+
+```{r WK05_T05   }
+
+
+# Create a subset of the NHANES dataset with only male individuals aged 18 and over,
+# who have both Height and Weight information
+subsetNHANES <-NHANES %>%
+  filter(Gender == "male", Age >= 18) %>%
+  drop_na(Height,Weight) %>% # remove rows where either Height or Weight is NA
+  select(Height,Weight)
+
+# Create a scatterplot for Height (x axis) and Weight (y axis)
+subsetNHANES %>%
+  ggplot(aes(x = Height, y = Weight)) + 
+  geom_point(pch=20) + # plot the data points and change the dot shape / size
+  xlab("Height (m)") + 
+  ylab("Weight (kg)") +
+  theme_bw() +                       ## remove gray background
+  theme(panel.grid=element_blank())  ## remove grid
+
+# Create a subset of the NHANES dataset with 5000 random individuals
+# who have both Height and Weight information
+subsetNHANES <-NHANES %>%
+  sample_n(5000) %>%
+  drop_na(Height,Weight) %>% # remove rows where either Height or Weight is NA
+  select(Height,Weight)
+
+# Fit a regression model to predict Weight from Height
+model <- lm(Weight~Height, data=subsetNHANES)
+
+# Get a list of residuals for that model
+res <- resid(model)
+
+# Produce a residual vs. fitted plot
+ggplot(model, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(aes(yintercept=0),color="red") +
+  labs(y='Residuals',x='Fitted values') +
+  theme_bw() +                       ## remove gray background
+  theme(panel.grid=element_blank())  ## remove grid
+
+## Made up data to create residual plots for normal and non-normal residuals
+set.seed(127) # This sets a seed of 127 so the random data will remain the same
+# Create a vector x for numbers 1 to 200
+x<-seq(1,200,1)
+
+# Create an error term dependent on x named err
+err<-NULL
+for(i in c(1:200)) {
+  err[i]<-rnorm(1,0,i)
+}
+# Calculate y using the equation y = 3.8x + 25 + err
+y<-3.8*x+25+err
+
+# Linear regression to predict y from x
+naivelm<-lm(y~x)
+
+# Calculate the absolute value of the linear model's residuals
+absresid<-abs(naivelm$residuals)
+
+# Constant variability
+# Create a normally distributed error term called errno
+errno<-NULL
+for(i in c(1:200)) {
+  errno[i]<-rnorm(1,0,15)
+}
+# Calculate yn using the equation y = 3.8x + 25 + errno
+yn<-3.8*x+25+errno
+
+# Linear regression to predict yn from x
+normallm<-lm(yn~x)
+
+## Residual plots for both models, displayed one above the other
+par(mfrow=c(2,1))
+# Residual plot for naivelm, non-constant variability
+ggplot(naivelm, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(aes(yintercept=0),color="red") +
+  labs(title="Heteroskedastic Residuals",y='Residuals',x='Fitted values') +
+  theme_bw() +                       ## remove gray background
+  theme(panel.grid=element_blank())  ## remove grid
+
+# Residual plot for normallm, constant variability
+ggplot(normallm, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(aes(yintercept=0),color="red") +
+  labs(title="Homoskedastic Residuals",y='Residuals',x='Fitted values') +
+  theme_bw() +                       ## remove gray background
+  theme(panel.grid=element_blank())  ## remove grid
+
+
+# Normality of residuals for model for subsetNHANES to predict Weight from Height
+# Create a Q-Q plot
+model %>%
+  ggplot(aes(sample=.resid)) +
+  stat_qq() +
+  stat_qq_line(color=2) +
+  labs(title="Normal Q-Q Plot") +    ## add title
+  theme_bw() +                       ## remove gray background
+  theme(panel.grid=element_blank())  ## remove grid
+
+# Create a histogram
+model %>%
+  ggplot(aes(x=.resid)) +
+  geom_histogram(col="black",fill="lightblue",bins = 30) +
+  labs(title="Histogram of residuals") +    ## add title
+  theme_bw() +                       ## remove gray background
+  theme(panel.grid=element_blank())  ## remove grid
+
+
+```
+
+
+### WK05_Code along 
+
+```{r wk05 - codealong  }
+
+# Demonstration of testing the association between two numerical variables
+# and checking of assumptions for regression and t-tests
+
+# Load the tidyverse package
+library(tidyverse)
+
+# Install the NHANES package with the dataset (only do this once!)
+# install.packages("NHANES")
+
+# Load the NHANES package
+library(NHANES)
+
+###############################################################################
+# EXAMPLE 1: Investigate the relationship between BPDiaAve and BPSysAve in 
+#            adult males
+###############################################################################
+
+# Create a subset of the NHANES dataset with only male individuals aged 18 and over,
+# who have both BPDiaAve and BPSysAve information
+subsetNHANES <-NHANES %>%
+  filter(Gender == "male", Age >= 18) %>%
+  drop_na(BPDiaAve,BPSysAve) %>% # remove rows where either BPDiaAve or BPSysAve is NA
+  select(BPDiaAve,BPSysAve)
+
+# Create a scatterplot for BPDiaAve (x axis) and BPSysAve (y axis)
+subsetNHANES %>%
+  ggplot(aes(x = BPDiaAve, y = BPSysAve)) + 
+  geom_point(pch=20) + # plot the data points and change the dot shape / size
+  xlab("Combined diastolic blood pressure reading (mm Hg)") + 
+  ylab("Combined systolic blood pressure reading (mm Hg)") +
+  theme_bw() +                       ## remove gray background
+  theme(panel.grid=element_blank())  ## remove grid
+
+# Calculate Pearson's correlation coefficient between BPDiaAve and BPSysAve
+# and display the output as a tibble (table) with columns for the coefficient 
+# estimate, t-statistic, p-value, degrees of freedom, lower and upper bound of 
+# the 95% confidence interval
+subsetNHANES %>%
+  summarize(Pearsonr = cor.test(BPDiaAve,BPSysAve,method="pearson")$estimate,
+            tstat = cor.test(BPDiaAve,BPSysAve,method="pearson")$statistic,
+            pval = cor.test(BPDiaAve,BPSysAve,method="pearson")$p.value,
+            df = cor.test(BPDiaAve,BPSysAve,method="pearson")$parameter,
+            lowerCI = cor.test(BPDiaAve,BPSysAve,method="pearson")$conf.int[1],
+            upperCI = cor.test(BPDiaAve,BPSysAve,method="pearson")$conf.int[2])
+
+# Base R alternative to get the same information
+with(subsetNHANES,cor.test(BPDiaAve,BPSysAve,method="pearson"))
+cor.test(subsetNHANES$BPDiaAve,subsetNHANES$BPSysAve,method="pearson")
+
+# Calculate Spearman's correlation coefficient between BPDiaAve and BPSysAve
+# and display the output as a tibble (table) with columns for the coefficient 
+# estimate, S-statistic, and p-value
+subsetNHANES %>%
+  summarize(Spearmanrho = cor.test(BPDiaAve,BPSysAve,method="spearman")$estimate,
+            Sstat = cor.test(BPDiaAve,BPSysAve,method="spearman")$statistic,
+            pval = cor.test(BPDiaAve,BPSysAve,method="spearman")$p.value)
+
+# Base R alternative to get the same information
+with(subsetNHANES,cor.test(BPDiaAve,BPSysAve,method="spearman"))
+# You will get a warning here as there are too many ties for the ranks so R cannot
+# compute an exact p-value
+
+# Build a linear regression model to predict BPSysAve based on BPDiaAve
+# using the subsetNHANES dataset and save the output as an object called lmodel
+lmodel <- lm(BPSysAve ~ BPDiaAve, data = subsetNHANES)
+
+# Display the coefficients (b0: intercept and b1: slope) for the model
+lmodel$coefficients
+
+# Display the 95% confidence intervals for each coefficient (beta 0 and beta 1)
+confint(lmodel)
+
+# Display a summary of the linear model, including: the variables and dataset
+# used; summary statistics for the distribution of the residuals; the coefficient
+# estimates and their associated standard error, t-value and p-value; model
+# measure of quality (e.g. residual standard error, adjusted R-squared and F statistic)
+summary(lmodel)
+
+## The coefficients are significantly different from 0. But the model only explains
+## 13% of the variances in the response variable BPSysAve.
+
+# Using that linear regression model, predict the average systolic blood pressure
+# value for an adult male with average diastolic blood pressure of 100 mm Hg
+predict(lmodel, newdata = data.frame(BPDiaAve=c(100)),se.fit = T)
+
+
+# Create the scatterplot, and this time add the regression line to it
+subsetNHANES %>%
+  ggplot(aes(x = BPDiaAve, y = BPSysAve)) + 
+  geom_point() + 
+  xlab("Combined diastolic blood pressure reading (mm Hg)") + 
+  ylab("Combined systolic blood pressure reading (mm Hg)") +
+  geom_smooth(method='lm', se=FALSE, color='turquoise4') +
+  theme_bw() +
+  theme(panel.grid=element_blank())
+
+###############################################################################
+# EXAMPLE 2: Check the assumptions for a t-test comparing BPSysAve between 
+#            Married and Never Married from the MaritalStatus variable for adult
+#            males
+###############################################################################
+
+# Create a subset of the NHANES dataset with only male individuals aged 18 and over,
+# who have BPSysAve information and MaritalStatus either Married or NeverMarried 
+subsetNHANES <-NHANES %>%
+  filter(Gender == "male"& Age >= 18 & 
+           MaritalStatus %in% c("Married","NeverMarried")) %>%
+  drop_na(BPSysAve) %>% # remove rows where BPSysAve is NA
+  select(MaritalStatus,BPSysAve)
+
+# 1. Assumption of normal distribution of variables
+
+# Plot a histogram for BPSysAve for each marital status 
+# the facets - by facet grid to separate the two marital statuses  
+subsetNHANES %>%
+  ggplot(aes(x = BPSysAve)) + 
+  geom_histogram(col="black",fill="lightblue",bins = 30 ) +
+  facet_grid(~MaritalStatus) +
+  theme_bw() +                       ## remove gray background
+  theme(panel.grid=element_blank())  ## remove grid
+
+# Create a Normal Q-Q plot for BPSysAve
+subsetNHANES %>%
+  ggplot(aes(sample=BPSysAve)) +
+  stat_qq() +
+  stat_qq_line(color=2) +
+  facet_grid(~MaritalStatus) +
+  labs(title="Normal Q-Q Plot") +    ## add title
+  theme_bw() +                       ## remove gray background
+  theme(panel.grid=element_blank())  ## remove grid
+
+# Perform the Shapiro-Wilk test on the BPSysAve variable for
+# Married individuals
+subsetNHANES %>%
+  filter(MaritalStatus == "Married") %>%
+  pull(BPSysAve) %>%
+  shapiro.test()
+
+# Perform the Shapiro-Wilk test on the BPSysAve variable for
+# NeverMarried individuals
+subsetNHANES %>%
+  filter(MaritalStatus == "NeverMarried") %>%
+  pull(BPSysAve) %>%
+  shapiro.test()
+
+# Test for normality of BPSysAve using the Kolmogorov-Smirnov 
+# test for Married individuals
+subsetNHANES %>%
+  filter(MaritalStatus == "Married") %>%
+  pull(BPSysAve) %>%
+  ks.test(.,"pnorm",mean=mean(.),sd=sd(.))
+
+# Test for normality of BPSysAve using the Kolmogorov-Smirnov 
+# test for NeverMarried individuals
+subsetNHANES %>%
+  filter(MaritalStatus == "NeverMarried") %>%
+  pull(BPSysAve) %>%
+  ks.test(.,"pnorm",mean=mean(.),sd=sd(.))
+# Here you will also get warnings about ties as the Kolmogorov-Smirnov test
+# doesn't expect any ties in a continuous distribution
+
+## The histograms suggest a distribution close to normal with a slight positive 
+## skew, the Q-Q plots show a deviation on one end of the distribution for 
+## each group.
+## The Shapiro-Wilk and Kolmogorov-Smirnov tests are both very significant, but 
+## that's expected for a large sample size (n=1969 for Married and n=724 for 
+## NeverMarried).
+
+# Optional
+# Plot a histogram for log(BPSysAve) for each marital status
+subsetNHANES %>%
+  ggplot(aes(x = log(BPSysAve))) + 
+  geom_histogram(col="black",fill="lightblue",bins = 30 ) +
+  facet_grid(~MaritalStatus) +
+  theme_bw() +                       ## remove gray background
+  theme(panel.grid=element_blank())  ## remove grid
+
+# The histograms of the log-transformed variable seem closer to the normal distribution.
+
+# 2. Homogeneity of variances
+# If we had to compare the BPSysAve between Married and NeverMarried men in that
+# dataset, we would check whether the variances were similar in both groups
+
+# Visualise the variation for each group in a box plot
+subsetNHANES %>%
+  ggplot(., aes(x=MaritalStatus, y = BPSysAve)) +
+  geom_boxplot(col="black",fill="lightblue") +
+  theme_bw() +                       ## remove gray background
+  theme(panel.grid=element_blank())  ## remove grid
+
+# Display the standard deviations of both groups
+subsetNHANES %>%
+  group_by(MaritalStatus) %>%
+  summarise(sd = sd(BPSysAve))
+
+# Perform an F-test to test whether the variance in BPSysAve is similar for
+# males and females
+subsetNHANES %>%
+  var.test(BPSysAve ~ MaritalStatus, ., alternative = "two.sided")
+
+# You can run the non-parametric Levene's test of variances. For this you may
+# need to install the car package if you don't already have it.
+# install.packages("car")
+
+# Load the car package
+library("car")
+subsetNHANES %>%
+  leveneTest(BPSysAve ~ MaritalStatus, data = .)
+
+## The box plots suggest that the spread is similar between the two groups.
+## The tests of variances are significant, but quite close to the 5% significance
+## level.
+
+
+###############################################################################
+# EXAMPLE 3: For adult males, check the assumptions of the linear regression
+#            model predicting BPSysAve based on BPDiaAve (see Example 1).
+###############################################################################
+
+# We can use the lmodel object we created to predict BPSysAve based on BPDiaAve
+# in Example 1.
+
+# 1. Constant variability of residuals
+
+# Produce a residual vs. fitted plot
+ggplot(lmodel, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(aes(yintercept=0),color="red") +
+  labs(y='Residuals',x='Fitted values') +
+  theme_bw() +                       ## remove gray background
+  theme(panel.grid=element_blank())  ## remove grid
+
+## This plot suggests some non-random patterns of distribution of the residuals.
+## It is likely that this assumption is not met.
+
+# 2. Normal distribution of the residuals
+
+# Get the list of residuals 
+res <- resid(lmodel)
+
+# Plot a histogram for the residuals
+res %>%
+  as_tibble() %>%
+  ggplot(aes(x = res)) + 
+  geom_histogram(col="black",fill="lightblue",bins = 30 ) +
+  theme_bw() +                       ## remove gray background
+  theme(panel.grid=element_blank())  ## remove grid
+
+# Create a Normal Q-Q plot for the residuals
+res %>%
+  as_tibble() %>%
+  ggplot(aes(sample=res)) +
+  stat_qq() +
+  stat_qq_line(color=2) +
+  labs(title="Normal Q-Q Plot") +    ## add title
+  theme_bw() +                       ## remove gray background
+  theme(panel.grid=element_blank())  ## remove grid
+
+# Perform the Shapiro-Wilk test on the residuals
+shapiro.test(res)
+
+# Test for normality of the residuals using the Kolmogorov-Smirnov test
+ks.test(res,"pnorm",mean=mean(res),sd=sd(res))
+
+## The histogram seems "normal enough", but the Q-Q plot highlights a departure
+## from the normal distribution at the ends of the range. Both normality tests
+## suggest a departure from normality although we still have a large sample size
+# (n=3581).
+
+###############################################################################
+# EXAMPLE 4: Investigate the correlation between BPSysAve and PhysActiveDays  #
+#            for adult males.
+###############################################################################
+
+# You will notice that BPSysAve is numerical, whereas PhysActiveDays is discrete,
+# and can be considered as categorical.
+# There are two ways to go about this question. You can use the non-parametric
+# Spearman's correlation method, or you can transform BPSysAve into a categorical
+# variable and use a Chi-square test.
+
+# Create a new subset of the data with only male individuals aged 18 and over,
+# who have both PhysActiveDays and BPSysAve information
+newsubsetNHANES <- NHANES %>%
+  filter(Gender == "male", Age >= 18) %>%
+  drop_na(PhysActiveDays,BPSysAve) # remove rows where either PhysActiveDays or BPSysAve is NA
+
+# A. Spearman's correlation method
+
+# Create a scatterplot for BPDiaAve (x axis) and BPSysAve (y axis)
+newsubsetNHANES %>%
+  ggplot(aes(x = PhysActiveDays, y = BPSysAve)) + 
+  geom_point(pch=20) + # plot the data points and change the dot shape / size
+  xlab("Number of days with physical activity") + 
+  ylab("Combined systolic blood pressure reading (mm Hg)") +
+  theme_bw() +                       ## remove gray background
+  theme(panel.grid=element_blank())  ## remove grid
+
+# Calculate Spearman's correlation coefficient between PhysActiveDays and BPSysAve
+# and display the output as a tibble (table) with columns for the coefficient 
+# estimate, S-statistic, and p-value
+newsubsetNHANES %>%
+  summarize(Spearmanrho = cor.test(PhysActiveDays,BPSysAve,method="spearman")$estimate,
+            Sstat = cor.test(PhysActiveDays,BPSysAve,method="spearman")$statistic,
+            pval = cor.test(PhysActiveDays,BPSysAve,method="spearman")$p.value)
+
+# Base R alternative to get the same information
+with(newsubsetNHANES,cor.test(PhysActiveDays,BPSysAve,method="spearman"))
+# You will get a warning here as there are too many ties for the ranks so R cannot
+# compute an exact p-value
+
+# B. Transform BPSysAve into a categorical variable  -  function - case when - mutate and make new categories 
+newsubsetNHANES <- newsubsetNHANES %>%
+  mutate(BPSysAveCat = case_when(BPSysAve <= 112 ~ 'low',
+                                 BPSysAve > 112  & BPSysAve <= 129 ~ 'medium',
+                                 BPSysAve > 129 ~ 'high')) %>%
+  mutate(BPSysAveCat = as_factor(BPSysAveCat))
+
+# Tabulate the PhysActiveDays and the new BPSysAveCat variables.
+# This creates a contingency table with the number of observations (individuals),
+# for each combination of categories of the two variables. It is essentially the
+# observed values needed to calculate the chi-square statistic.
+newsubsetNHANES %>% 
+  count(BPSysAveCat,PhysActiveDays) %>% 
+  spread(PhysActiveDays,n)
+
+# Perform the chi-square test on these two variables
+newsubsetNHANES %>%
+  select(PhysActiveDays,BPSysAveCat) %>%
+  table() %>%
+  chisq.test()
+
+# Neither method finds a significant association between PhysActiveDays
+# and BPSysAve.
+
 ```
 

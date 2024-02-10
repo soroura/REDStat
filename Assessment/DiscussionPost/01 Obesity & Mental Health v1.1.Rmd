@@ -41,7 +41,6 @@ df_clean <- na.omit(df[, c("BMI_WHO", "DaysMentHlthBad", "BMI")])
 
 
 
-
 library(ggplot2)
 # Assuming df is your cleaned dataset with BMI categories and DaysMentHlthBad variables
 ggplot(df_clean, aes(x = BMI_WHO, y = DaysMentHlthBad, fill = BMI_WHO)) +
@@ -49,9 +48,27 @@ ggplot(df_clean, aes(x = BMI_WHO, y = DaysMentHlthBad, fill = BMI_WHO)) +
   labs(title = "Days of Poor Mental Health by BMI Category",
        x = "BMI Category",
        y = "Days of Poor Mental Health") +
-  theme_minimal() +
+  theme_minimal() 
+
   coord_cartesian(ylim = c(0, 10))
 
+install.packages(c("hrbrthemes", "viridis"))
+library(hrbrthemes)
+library(viridis)
+
+df_clean %>% 
+  ggplot(aes(x= BMI_WHO, y = DaysMentHlthBad, fill = BMI_WHO)) +
+  geom_violin(width=2.1, size=0.2) + 
+  scale_fill_viridis(discrete = TRUE) +
+  scale_color_viridis(discrete = TRUE) +
+  theme_ipsum() +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(size=11)
+  ) +
+  coord_flip() +
+  xlab("") +
+  ylab("aaaaaaaaaa (%)")
 
 ```
 
