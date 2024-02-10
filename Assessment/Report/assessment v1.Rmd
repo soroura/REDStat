@@ -23,8 +23,38 @@ demographic_summary <- carehome_data %>%
   select(participant_id, sex, age_at_recording, BMI, carehome_id) %>%
   summary()
 
+# # Print the summary table
+# print(demographic_summary)
+
 # Print the summary table
-print(demographic_summary)
+knitr::kable(demographic_summary, caption = "Summary of Demographic and Baseline Characteristics")
+
+# Age Distribution Graph
+ggplot(carehome_data, aes(x = age_at_recording)) +
+  geom_histogram(binwidth = 5, fill = "skyblue", color = "black") +
+  labs(title = "Age Distribution of Participants",
+       x = "Age at Recording",
+       y = "Frequency") +
+  theme_minimal()
+
+# Sex Distribution Graph
+ggplot(carehome_data, aes(x = sex, fill = sex)) +
+  geom_bar() +
+  labs(title = "Sex Distribution of Participants",
+       x = "Sex",
+       y = "Count") +
+  theme_minimal() +
+  scale_fill_manual(values = c("blue", "pink"))
+
+# Physical Activity Type Distribution
+ggplot(carehome_data, aes(x = physical_activity, fill = physical_activity)) +
+  geom_bar() +
+  labs(title = "Distribution of Physical Activity Types",
+       x = "Physical Activity Type",
+       y = "Count") +
+  theme_minimal() +
+  scale_fill_brewer(palette = "Set3")
+
 
 # Generate a graph for Age Distribution
 age_distribution <- ggplot(carehome_data, aes(x = age_at_recording)) +
