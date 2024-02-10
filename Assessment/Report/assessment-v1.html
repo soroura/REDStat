@@ -511,6 +511,56 @@ print(t_test_results)</code></pre>
 ## sample estimates:
 ## mean in group 1 mean in group 2 
 ##        24.93372        24.91567</code></pre>
+<div id="demographics" class="section level3">
+<h3>Demographics</h3>
+<p>The output of the t-test you provided examines the difference in mean
+Body Mass Index (BMI) between individuals residing in two different care
+homes. Here’s a breakdown of the key components of the t-test output and
+what they signify:</p>
+<ul>
+<li><p>t-value (t = 0.092271): The t-value measures the size of the
+difference relative to the variation in your sample data. A small
+t-value in this context suggests that the difference in mean BMIs
+between the two groups is small compared to the variability within the
+groups.</p></li>
+<li><p>Degrees of Freedom (df = 337.01): This value, calculated based on
+the sample sizes of the two groups, is used to determine the critical
+value of t at a given significance level. The degrees of freedom here
+suggest a relatively large sample size, allowing for more reliable
+estimations of the population parameters.</p></li>
+<li><p>p-value (p-value = 0.9265): The p-value indicates the probability
+of observing a test statistic as extreme as, or more extreme than, the
+one observed if the null hypothesis (no difference in means) is true. A
+high p-value (typically p &gt; 0.05) suggests that the observed data are
+consistent with the null hypothesis. In this case, the p-value of 0.9265
+is much higher than the conventional alpha level of 0.05, indicating
+that the difference in mean BMIs between the two care homes is not
+statistically significant.</p></li>
+</ul>
+<p>Alternative Hypothesis: The alternative hypothesis stated here is
+that the true difference in means between the two groups is not equal to
+0. Given the high p-value, the data do not provide sufficient evidence
+to reject the null hypothesis in favor of this alternative
+hypothesis.</p>
+<p>95 Percent Confidence Interval (-0.3669021 to 0.4030182): This
+interval provides a range of values that are likely to include the true
+difference in mean BMIs between the two care homes. Since this
+confidence interval includes 0, it suggests that the true difference
+could be zero, further supporting the lack of a statistically
+significant difference.</p>
+<p>Sample Estimates: The mean BMI for group 1 (carehome_id 1) is
+24.93372, and for group 2 (carehome_id 2) is 24.91567. These means are
+very close to each other, reinforcing the conclusion drawn from the
+p-value and confidence interval that there is no significant difference
+in BMI between the two care homes.</p>
+<p><em>Interpretation</em> The outcome of the t-test suggests that there
+is no statistically significant difference in the mean BMI values
+between individuals in the two care homes. The p-value is much greater
+than 0.05, indicating that any observed difference in means could easily
+have occurred by chance alone. This implies that, based on BMI, there is
+no evidence to suggest a difference in the health status related to
+weight between the two care homes under study.</p>
+</div>
 </div>
 
 
