@@ -1,0 +1,363 @@
+---
+title: "Mpox situation report till 31 August 2023"
+date: "2023-10-16"
+output:
+  word_document:
+   reference_docx: "template.docx"
+   toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+```{r load-packages}
+pacman::p_load(                    #load packages required for type of analysis in the report
+  data.table,
+  rio,
+  here,
+  
+  janitor,
+  dplyr,
+  epikit,
+  lubridate,
+  aweek,
+  
+  scales,
+  apyramid,
+  crosstable,
+  ggplot2,
+  flextable,
+  gtsummary,
+  tidyverse
+)
+
+```
+
+```{r import-data}
+
+## we can use base R function read.csv 
+
+# mpox <- read.csv(here("output", "mpox_20231012.csv")) # we used here function to create relative path to the project root
+
+## another option is read_csv function from readr package
+
+# mpox <- read_csv(here("output/mpox_20231012.csv")) 
+
+## importing data with import/here functions
+
+mpox <-  import(here("Data", "Mpox", "mpox_20231012.csv"))
+
+## using fread function
+
+# path <- "write here your directory path"   # do not forget to switch the \ to /
+# 
+# mpox <- fread(file = paste0(path, "write here your file name.csv"), header = TRUE)
+```
+
+
+
+```{r data-processing}
+mpox <- mpox %>% 
+ # we can create epiweek using epiweek function from lubridate
+  dplyr::mutate(epiweek = epiweek(adm_date),     
+ # another option is date2week function from aweek           
+               epiweek2 =  aweek::date2week(    
+                 adm_date,
+                 week_start = "sun", 
+                 floor_day = T),
+  # start day of the week              
+               epiweek_date = as.Date(epiweek2),
+ # another option using lubridate function
+               # epiweek_date2 = floor_date(adm_date,
+               #                            unit = "week",
+               #                            week_start = 7
+               #                            ),
+               year = year(adm_date),
+               
+               month = month(adm_date),
+ # age grouping could be done with cut function from base R           
+               age_gp = age_categories(  # check other arguments of age_categories function
+                 age_yr,
+                 breakers = c(0, 10, 20, 25, 30, 35, 40, 45, 55, 65),
+                 separator = "-"),
+ 
+               symptomatic= case_when(
+                 symp_onset != is.na(symp_onset)  ~ "yes",
+                 TRUE                             ~ "no"),
+               
+               case_outcome = case_when(
+                 outcome == "death" ~ "died",
+                 outcome == "unknown"|outcome == "" ~ "unknown",
+                 .default = "alive"))
+
+```
+
+```{r filter-pos-cases}
+
+mpox_pos <- mpox %>% 
+  filter(result == "positive")
+```
+
+\pagebreak
+
+# Summary  
+\n  
+\n  
+
+
+As of `r max(mpox$adm_date, na.rm = T)`, a total of **`r nrow(mpox)`** suspect monkeypox cases were reported from **`r length(unique(mpox$country))`**. Out of _`r nrow(mpox)`_ reported cases, **`r fmt_count(mpox, result == "positive")`** confirmed mpox cases by PCR test. \n
+
+[**_From positive cases_**]{.ul}, `r fmt_count(mpox_pos, case_outcome == "died")` fatal cases were recorded. Males represented `r fmt_count(mpox_pos, sex == "male")` of total positive cases. The median(IQR) age of positive cases was `r median(mpox_pos$age_yr, na.rm = T)` (`r quantile(mpox_pos$age_yr, prob = c(0.25, 0.75))`). There are `r mpox_pos %>% filter(year == 2022) %>% nrow()` and `r mpox_pos %>% filter(year == 2023) %>% nrow()` positive cases in 2022 and 2023, respectively.
+
+\pagebreak
+
+# **1. Person**
+
+**Table 1: Mpox confirmed cases by age group and sex, till 31 July 2023**
+
+```{r table1}
+
+## tabyl and adorn
+
+#  epiweek_table <- mpox %>% 
+#   filter(result == "positive", sex != "intersex") %>% 
+#   tabyl(age_gp, sex, show_na = F) %>%   # note the default is show_na = TRUE
+#   adorn_totals(where = "both") %>%
+#   adorn_percentages("col") %>%          # we can arrange using arrange(desc(name of col))
+#   adorn_pct_formatting(digits = 0) %>% 
+#   adorn_ns(position = "front") %>% 
+#   flextable::as_flextable()
+# 
+# epiweek_table
+
+
+## tidyverse option 
+
+# mpox %>% 
+#   filter(result == "positive", sex != "intersex") %>% 
+#   group_by(age_gp) %>% 
+#   summarise(
+#     female = sum(sex == "female", na.rm = T),
+#     male = sum(sex == "male", na.rm = T),
+#      total = n()) %>% 
+#   adorn_percentages("col") %>% 
+#   adorn_pct_formatting(digits = 0) %>% 
+#   adorn_ns(position = "front") %>% 
+#   flextable::flextable() %>% 
+#   flextable::autofit()
+
+
+# ## crosstable
+# 
+# crosstable(mpox_pos %>% filter(sex != "intersex"), 
+#            cols = c(age_gp), total = "col",
+#            by = c(sex), percent_pattern = "{n} ({p_row})", 
+#            percent_digits = 1) %>% 
+# flextable::as_flextable()
+
+
+## gt summary
+
+mpox %>% 
+  filter(result == "positive", sex != "intersex") %>%
+  dplyr::select(age_gp, sex) %>% 
+  tbl_summary(by = sex, label = list(age_gp ~ "Age group")) 
+  
+```
+
+\pagebreak
+
+
+***Figure(1): Age-sex pyramid of reported Mpox cases till 31 August 2023***
+
+```{r fig1}
+
+mpox %>% 
+  filter(sex != "intersex") %>% 
+  apyramid::age_pyramid(
+    age_group = age_gp,
+    split_by = sex,
+    pal = c("lightblue", "pink"),
+    proportional = T)+
+  labs(x = "Age group (year)",
+       title = "Age and sex distribution of admitted mpox cases",
+       subtitle = "Data till 31 August 2023",
+       caption = "Note: admitted cases include suspect, propable, and confirmed cases \n Mock data was used to create this figure")+
+  theme(axis.text = element_text(face = "bold"),
+        axis.title = element_text(face = "bold", color = "darkblue"),
+         legend.title = element_blank(),
+        plot.caption.position = "plot") +
+  scale_fill_manual(
+    values =  c("lightblue", "pink"),
+    labels = c("male" = "Male", "female" = "Female")
+  ) 
+
+```
+
+\pagebreak
+
+***Figure(2): Distribution of confirmed Mpox cases' outcome by symptom presence***
+
+```{r fig2}
+
+# barplot
+
+  mpox_pos %>% 
+    ggplot(aes(x= case_outcome, fill = symptomatic))+
+  geom_bar(position = "dodge") +
+  coord_flip()
+```
+
+\pagebreak
+
+# **2. Place**
+
+**Table 2: Confirmed Mpox cases by country**\
+*Date as of 31 August 2023*
+
+```{r table2}
+
+table2 <- mpox_pos %>% 
+  group_by(country) %>% 
+  summarise(
+    'Total cases' = n(),
+    'Total death' = sum(outcome == "death", na.rm = TRUE),
+    cases_Jul2023 = sum(adm_date >= "2023-07-01" & adm_date <= "2023-07-31"),
+    cases_Aug2023 = sum(adm_date >= "2023-08-01" & adm_date <= "2023-08-31"),
+    Monthly_change = percent((cases_Aug2023 - cases_Jul2023)/cases_Jul2023),
+    'Most recent admission date' = max(adm_date, na.rm = T)
+  ) %>% 
+  flextable() %>%               # we may go further with table beautification using flextable options
+   flextable::set_header_labels(country = "Country",
+                               `cases_Jul2023` = "Cases in July 2023",
+                               cases_Aug2023 = "Cases in August 2023",
+                               Monthly_change = "Monthly change %") %>% 
+  flextable::bold(part = "header") %>% 
+  flextable::bold(j =1) %>% 
+  flextable::theme_zebra() %>% 
+  flextable::bg(part = "header",
+               bg= "#5DADE2") %>% 
+  flextable::bg( j =6,
+                 i= ~  Monthly_change >= 10,
+                 bg= "red",
+                 part= "body"
+               )  %>%
+  flextable::bg( j =6,
+                 i= ~  Monthly_change < 10,
+                 bg= "lightgreen",
+                 part= "body"
+               ) %>% 
+  flextable::color(part = "header",
+                   color = "white") %>% 
+  flextable:: align(part = "header", j=2:3, align = "center") %>% 
+  flextable::align(part = "body",j=2:3, align = "center") %>% 
+  autofit()  %>% 
+  set_table_properties(layout = "autofit")
+table2
+```
+
+
+\pagebreak
+
+
+# **3. Time**
+
+
+***Figure(3): Weekly distribution of confirmed mpox cases by reporting country and date of admission***\
+Date till 2023-08-31
+
+```{r fig3}
+
+# daily epi curve
+
+# mpox %>% 
+#   filter(result == "positive") %>% 
+#   ggplot(aes(x= adm_date, fill = country))+
+#   geom_histogram(
+#     binwidth = 7,
+#     color = "darkgrey"
+#   )+
+#   scale_x_date(
+#     expand = c(0,0),
+#     date_breaks = "6 weeks",
+#     labels = scales :: label_date_short()
+#   )+
+#   scale_y_continuous( expand = c(0,0)) +
+#   scale_fill_manual(
+#     values = c("lightblue", "pink", "lightgreen", "lightyellow", "lightgrey")
+#   )+
+#   labs(
+#     x= "Admission date",
+#     y= "Number",
+#     fill= ""
+#   )+
+#   theme(
+#     axis.text = element_text(face = "bold", color = "black"),
+#     axis.title = element_text(face = "bold", color = "black")
+#   ) +
+#   theme_classic()
+
+```
+
+
+```{r}
+
+## Sunday as start day of the  week
+
+weeks <- seq.Date(
+  from = floor_date(min(mpox$adm_date, na.rm=T), unit = "week", week_start = 7),     
+  to =   ceiling_date(max(mpox$adm_date, na.rm=T), unit = "week", week_start = 7),
+  by =   "week")
+
+
+mpox %>% 
+  filter(result == "positive") %>% 
+  ggplot(aes(x= adm_date, group = country, fill = country))+  
+  geom_histogram(
+    breaks = weeks,
+    closed = "left",
+    color = "darkgrey"
+  )+
+  scale_x_date(
+    expand = c(0,0),
+    
+    breaks = seq.Date(
+  from = floor_date(min(mpox$adm_date, na.rm=T), unit = "week", week_start = 7),    
+  to =   ceiling_date(max(mpox$adm_date, na.rm=T), unit = "week", week_start = 7),
+  by =   "6 weeks"),
+  
+  minor_breaks = seq.Date(
+  from = floor_date(min(mpox$adm_date, na.rm=T), unit = "week", week_start = 7),    
+  to =   ceiling_date(max(mpox$adm_date, na.rm=T), unit = "week", week_start = 7),
+  by =   "week"),
+  
+  date_labels = str_glue("%Y-W%U")) + #  we can add \n after year, to enter week number to new line 
+  
+  scale_y_continuous( expand = c(0,0),
+                      labels = label_number(accuracy = 1)) + # to round to whole number
+  scale_fill_manual(  # to manual modification of colors or change legend labels or add legend title
+    values = c("lightblue", "pink", "lightgreen", "lightyellow", "lightgrey")
+  )+
+  labs(
+    x= "Admission date",
+    y= "Number",
+    fill= ""
+  )+
+  theme_classic()+
+  theme(
+    axis.text = element_text(face = "bold", color = "black"),
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    axis.title = element_text(face = "bold", color = "black")
+  )
+
+```
+
+
+
+
+
+
+
+
+

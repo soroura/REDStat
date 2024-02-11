@@ -95,4 +95,42 @@ Sample Estimates: The mean BMI for group 1 (carehome_id 1) is 24.93372, and for 
 The outcome of the t-test suggests that there is no statistically significant difference in the mean BMI values between individuals in the two care homes. The p-value is much greater than 0.05, indicating that any observed difference in means could easily have occurred by chance alone. This implies that, based on BMI, there is no evidence to suggest a difference in the health status related to weight between the two care homes under study.
 
 
+```{r}
+# Load necessary library
+library(tidyverse)
+
+# Read the dataset
+carehome_data <- read.csv("carehomedata_assessment2024.csv")
+cleaned_data <- na.omit(carehome_data[, c("carehome_id", "moderate_activity_duration")])
+
+
+# Create a contingency table of care homes and physical activity types
+table <- table(carehome_data$carehome_id, carehome_data$physical_activity)
+
+# Perform Chi-Square Test
+chi_test_result <- chisq.test(table)
+
+# Print the results
+print(chi_test_result)
+
+# Assuming your dataset is named carehome_data
+# Remove rows with missing values in either carehome_id or moderate_activity_duration
+
+cleaned_data <- na.omit(carehome_data[, c("carehome_id", "moderate_activity_duration")])
+
+# Now, create the table
+
+
+# Assuming moderate_activity_duration is a categorical variable in your dataset
+# Create a contingency table for care home and moderate activity duration
+table_moderate_activity <- table(carehome_data$carehome_id, carehome_data$moderate_activity_duration)
+
+# Perform the Chi-square test
+chi_test_moderate_activity <- chisq.test(table_moderate_activity)
+
+# Print the results
+print(chi_test_moderate_activity)
+
+length(carehome_data$moderate_activity)
+```
 

@@ -1,0 +1,124 @@
+---
+title: "Cholera cases till 2023-07-31"
+author: "write your name"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+```{r, load-packages}
+
+pacman::p_load(
+  data.table,             # fast to load large datasets
+  rio,                    # to import/export different types of data
+  here,                   # set relative path to project root
+  
+  dplyr,                  # data processing and manipulation
+  lubridate,              # date manipulation
+  Hmisc,                  # label variables
+  janitor,                # data cleaning + quick tables
+  epikit,                 # age categories
+  stringr,                # working with string variables
+  
+  crosstable,             # generate tables
+  gtsummary,              # generate tables
+  flextable,              # enhance table visualization
+ 
+  ggplot2,                # data visualization
+  scales,
+  incidence,              # epidemiological curve
+  
+  tidyverse               # data management
+)
+
+```
+
+```{r, import-data}
+
+cholera0 <-  import(here("Data", "Cholera", "cholera_20231102.csv"))
+
+```
+
+```{r, data-processing}
+
+cholera <- cholera0 %>%     
+  clean_names() %>% 
+  rename(                  
+    case_cat = f_diag
+  ) %>% 
+  mutate( sex= recode(sex,        
+                      "f" = "female",
+                      "F" = "female",
+                      "Female" = "female",
+                      "M" = "male",
+                      "m" = "male",
+                      "Male" = "male"
+  ),
+  age_yr = case_when(
+    age_unit == "month" ~ round(age/12),
+    .default = age
+  ),
+  age_cat = age_categories(age_yr,
+                            lower = 0,
+                            upper = 60,
+                            by= 10)
+  ) %>% 
+  mutate(outcome_date= as.Date(outcome_date, origin= "1899-12-30"),
+         adm_date= mdy(adm_date)
+           ) %>%
+  select(-c(muac, ocv_doses, starts_with(c("rdt_", "cult_"))))
+
+```
+
+# Executive summary
+
+As of `r max(cholera$adm_date, na.rm= T)`, there were a total of **`r nrow(filter(cholera, case_cat== "confirmed"))`** confirmed cholera cases and **`r nrow(filter(cholera, case_cat== "confirmed" & outcome== "death"))`** deaths(CFR = **`r percent(nrow(filter(cholera, case_cat== "confirmed" & outcome== "death"))/nrow(filter(cholera, case_cat== "confirmed")))`**). The mean age of confirmed cases was **`r mean(cholera$age_yr[cholera$case_cat== "confirmed"], na.rm= T)`** years (standard deviation = **`r round(sd(cholera$age_yr[cholera$case_cat== "confirmed"], na.rm= T), digits=2)`**)
+
+
+
+## Reported cholera cases by age categories, till 31 July 2023  
+
+```{r, table1}
+crosstable(cholera, c(age_cat)) %>% flextable::as_flextable()
+```
+
+
+## Distribution of reported cholera cases by date of admission and case category, till 31 July 2023  
+
+```{r, graph1}
+
+weeks <-  seq.Date(
+  from = floor_date(min(cholera$adm_date, na.rm = T), unit = "week", week_start = 7),
+  to = ceiling_date(max(cholera$adm_date, na.rm = T), unit = "week", week_start = 7),
+  by = "week"
+)
+
+epicurve <- cholera %>% 
+  ggplot(aes(x= adm_date, fill= case_cat))+
+  geom_histogram(
+    breaks = weeks,
+    closed = "left",
+    color = "grey50"
+  )+
+  scale_y_continuous(expand = c(0,0))+
+  scale_x_date(
+    expand = c(0,0),
+    breaks = seq.Date(
+      from = floor_date(min(cholera$adm_date, na.rm=T), unit = "week", week_start = 7),    
+      to =   ceiling_date(max(cholera$adm_date, na.rm=T), unit = "week", week_start = 7),
+      by =   "6 weeks"),
+    
+    minor_breaks = seq.Date(
+      from = floor_date(min(cholera$adm_date, na.rm=T), unit = "week", week_start = 7),    
+      to =   ceiling_date(max(cholera$adm_date, na.rm=T), unit = "week", week_start = 7),
+      by =   "week"),
+    
+    date_labels = str_glue("%Y-W%U"))+
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1))
+  
+epicurve
+```

@@ -1,0 +1,50 @@
+---
+title: "demo report"
+author: "Hossam Hassan"
+date: "`r Sys.Date()`"
+output:
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r, include=FALSE}
+library(tidyverse)
+```
+
+
+# Table of content
+## Introduction
+## Map of Egypt
+
+
+## Introduction
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+## Egypt Map
+
+
+
+```{r pressure, echo= FALSE}
+
+
+
+map_emr <- map_data('world')[map_data('world')$region %in% c("Egypt"),]
+
+ggplot() +                 # first layer
+geom_polygon(data = map_data("world"), 
+             aes(x=long, y=lat, group = group), 
+             color = 'blue', fill = 'lightblue')+ 
+  
+  geom_polygon(data = map_emr,
+               aes(x=long, y=lat, group = group),
+               color = 'red', fill = 'pink')
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

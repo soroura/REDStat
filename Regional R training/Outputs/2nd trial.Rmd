@@ -1,0 +1,116 @@
+---
+title: "2nd version demo"
+author: "Hossam Hassan"
+date: "`r Sys.Date()`"
+output:
+  word_document: default
+
+
+```{r packages, include=FALSE}
+pacman::p_load(
+  data.table,
+  rio,
+  here,
+  dplyr,
+  epikit,
+  janitor,
+  lubridate,
+  ggplot2,
+  crosstable,
+  stringr,
+  gtsummary,
+  flextable,
+  Hmisc,
+  scales,
+  incidence,
+  tidyverse )
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r dataset, include=FALSE}
+
+cholera0 <-  import(here("Data/Cholera/cholera_20231102.csv"))
+
+#data processing
+cholera <- cholera0 %>% janitor::clean_names() %>% 
+  rename(case_cat = f_diag) %>% mutate( sex =
+                                     recode(sex,
+                                              "F" = "Female",
+                                            "female" = "Female",
+                                            "Female" = "Female",
+                                            "m" = "Male",
+                                            "male" = "Male",
+                                            "Male" = "Male")) %>% 
+  mutate(age_yr = case_when(age_unit == "month" ~ round(age/12,0), .default = age))
+
+cholera <- cholera %>% mutate(age_cat = age_categories(age_yr, 
+                                                       lower = 0,
+                                                       upper = 60,
+                                                       by = 10))
+
+cholera <- cholera %>% #change the character date
+  dplyr::mutate(adm_date2 = as.Date(adm_date, format = "%m-%d-%Y")) %>%
+  dplyr::mutate(adm_date3 = mdy(adm_date), onset_date2 = ymd(onset_date))
+                                    
+                                                                          
+cholera <- cholera %>% #change the numeric date
+  dplyr::mutate(outcome_date2 = as.Date(outcome_date, origin= "1899-12-30"))
+
+# creating epi-weeks
+
+cholera <- cholera %>%
+  dplyr::mutate(epiweek= aweek::date2week(adm_date2, week_start = 7, floor_day= 1)) %>% 
+  dplyr::mutate(
+    epiweek_start_date= aweek::week2date(epiweek)
+  )
+  
+#LOS calculation
+
+cholera <- cholera %>% 
+  dplyr::mutate(los = as.numeric(outcome_date2 - adm_date2), 
+                sym_to_adm= as.numeric(adm_date2 - onset_date2))
+
+
+#create a factor
+
+cholera <- cholera %>% 
+  dplyr::mutate(sex_f0 = case_when(sex == "Female" ~ '2',
+                                  sex== "Male" ~ '1',
+                                  .default = "unknown"),
+                sex_f = factor(sex_f0, levels= c(1,2,3),
+                               label = c("Male","Female","unknown")))
+
+
+
+```
+
+
+# table of content
+
+### Introduction
+### Demograhic characteristics
+
+
+## Introduction
+
+This is an R Markdown document. created by hossam hassan for the first time as r project. 
+Thanks for EMRO colleagues for all support and help
+
+## Demograhhic characteristics
+
+### *Age characy=teristics*
+```{r demographics}
+crosstable(cholera, c(age_yr))
+crosstable(cholera, c(age_yr)) %>% flextable::as_flextable()
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
