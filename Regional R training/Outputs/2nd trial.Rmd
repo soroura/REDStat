@@ -7,23 +7,26 @@ output:
 
 
 ```{r packages, include=FALSE}
-pacman::p_load(
-  data.table,
-  rio,
-  here,
-  dplyr,
-  epikit,
-  janitor,
-  lubridate,
-  ggplot2,
-  crosstable,
-  stringr,
-  gtsummary,
-  flextable,
-  Hmisc,
-  scales,
-  incidence,
-  tidyverse )
+# pacman::p_load(
+#   data.table,
+#   rio,
+#   here,
+#   dplyr,
+#   epikit,
+#   janitor,
+#   lubridate,
+#   ggplot2,
+#   crosstable,
+#   stringr,
+#   gtsummary,
+#   flextable,
+#   Hmisc,
+#   scales,
+#   incidence,
+#   tidyverse)
+
+pacman::p_load(data.table, rio, here, dplyr, epikit, janitor, lubridate, ggplot2, crosstable, stringr, gtsummary, flextable, Hmisc, scales, incidence, tidyverse)
+
 
 knitr::opts_chunk$set(echo = TRUE)
 ```
