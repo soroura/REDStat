@@ -1,0 +1,52 @@
+---
+title: "Week 5 Lab"
+author: "Sophie Marion de Proce (edited by: Christopher A Oldnall)"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Package and Data Loading
+
+In this lab, we will use the familiar NHAHES dataset to practice correlation and regression analysis, as well as checking assumptions for regression and t-tests. We will be using a significance level of 5% throughout. For this we will initially load in the data and packages necessary. This is the NHANES data set and also tidyverse.
+
+```{r PackageDataLoading, message=FALSE}
+library()
+library()
+```
+
+## Exercise 1
+
+From NHANES investigate the correlation between UrineFlow1 and UrineVol1 in adult males visually and numerically. We will consider that these variables are normally distributed for this exercise.
+
+```{r Exercise1, echo=FALSE}
+
+```
+
+
+## Exercise 2
+
+Using the same dataset as in Exercise 1, build a simple linear regression model to predict UrineVol1 based on UrineFlow1 in adult males. Report its parameters, assess its quality and determine whether the model assumptions hold.
+
+```{r Exercise2, echo=FALSE}
+
+```
+
+## Exercise 3
+
+If you were to investigate the difference in UrineFlow1 between adult males and females, check whether the assumptions for parametric tests hold.
+
+```{r Exercise3, echo=FALSE}
+
+```
+
+## Exercise 4
+
+Now, we turn our attention to the NCBirths data. It is thought that weight of the baby tends to increase as the number of weeks that the pregnancy was carried increases? Please use appropriate visualisation and a linear regression model to test this hypothesis and to quantify the relationship.
+
+```{r Exercise4, echo=FALSE}
+
+```
+

@@ -10,8 +10,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 
 
-# Load data 
-
+### Load data 
 ```{r}
 library(tidyverse)
 
@@ -94,6 +93,7 @@ Sample Estimates: The mean BMI for group 1 (carehome_id 1) is 24.93372, and for 
 *Interpretation*
 The outcome of the t-test suggests that there is no statistically significant difference in the mean BMI values between individuals in the two care homes. The p-value is much greater than 0.05, indicating that any observed difference in means could easily have occurred by chance alone. This implies that, based on BMI, there is no evidence to suggest a difference in the health status related to weight between the two care homes under study.
 
+### ADDITIONAL
 
 ```{r}
 # Load necessary library

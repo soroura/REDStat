@@ -10,13 +10,1645 @@ knitr::opts_chunk$set(echo = TRUE, messages=FALSE, warning = FALSE)
 ```
 
 
-```{r}
-install.packages("BDSA")
-library(tidyverse)
-library(dplyr)
-library(BDSA)
-library(ggplot2)
+```{r load libraries / pacman}
+# install.packages("BDSA")
+# library(tidyverse)
+# library(dplyr)
+# library(BSDA)
+# library(ggplot2)
+pacman::p_load(data.table, rio, here, dplyr, epikit, janitor, lubridate, ggplot2, crosstable, stringr, gtsummary, flextable, Hmisc, scales, incidence, tidyverse, kableExtra, knitr, descriptr, NHANES, NHSRdatasets, lattice, BSDA, medicaldata)
+
 ```
+
+## WEEK 1 
+
+
+
+###  WK1-TOPIC2-PART 1  - distribution - freqyency table 
+
+
+here we can create 
+*  Frequency table -  using function from descriptr apparently  -  for pulse - distributed in bins -  with frequncy / cumulative freqncy / cumulative percent 
+```{r Distribution  WK1 TOPIC 2 - PART 1 }
+## Slide 6: bar chart for categorical variables
+
+# First, we create a vector of outcomes from tossing a coin
+coin_tosses <- c("heads", "heads", "heads", "heads", "heads", "heads",
+                 "tails", "tails", "tails", "tails")
+
+# Now we turn this vector into a dataframe for better plotting
+# The resulting dataframe has one column
+coin_tosses <- as.data.frame(coin_tosses)
+
+# And here we give the dataframe column a name (result)
+colnames(coin_tosses) <- c("result")
+
+# Now we create a bar chart
+coin_tosses %>% 
+  ggplot(aes(x = result)) +
+  geom_bar()
+
+## Slide 9: frequency table for a continuous variable 
+# we'll use pulse data from the NHANES dataset (and package)
+# (10k observations of pulse)
+
+# Let's load the data in first
+data(NHANES)
+
+# quite a clunky frequency table, using base R functions
+# (gives you the frequency of each value)
+table(NHANES$Pulse)
+
+# Using the code below, you can ask R to divide data into bins
+# and provide frequencies by bin
+bins <- seq(40, 140, by=5)
+scores <- cut(NHANES$Pulse, bins)
+table(scores) 
+
+# The resulting table is closer to what we'd like, but not great for printing.
+
+# The descriptr package gives us a function for a slightly better frequency table:
+ds_freq_table(NHANES, Pulse, 10) # This is the table you saw on slide 9.
+
+
+
+```
+
+###  WK1-TOPIC2-PART 2   -  measures of central tendency 
+here we can measures of central tendency 
+it is going beyond tables   
+* averages --  mean / median / mode 
+* spread -- how close to the center   **variance, standard deviation, interquantile ranges**
+* HERE -  mode is created as**function**  and you can create it and learn how to make a funciton 
+* note that to calcuate the median or mean - you need to remove the NA values - using fucntino na.rm = TTUE
+```{r Distribution  WK1 TOPIC 2 - PART 2}
+
+# Let's load the NHANES data
+data(NHANES)
+
+# Let's use R to calculate measures of central tendency in the Pulse variable
+
+# Mean ----
+# Remember from the frequency table that we do have missing values
+# We need to tell R explicitly to remove them from the mean calculation
+# mean is x bar  - sum all the x(es) and devide this by N (number of data ponts you had in your dataset)
+# Otherwise we will get NA as the outcome
+mean_pulse <- mean(NHANES$Pulse, na.rm = TRUE)
+mean_pulse
+
+
+# Median ----
+median_pulse <- median(NHANES$Pulse, na.rm = TRUE)
+median_pulse
+
+# Mode ----
+# There is no ready-made function in R to calculate the mode
+# We can write our own function (optional)
+# This function comes from StackOverflow:
+# https://stackoverflow.com/questions/2547402/how-to-find-the-statistical-mode
+# Understanding the details of it is beyond the scope of this course
+# But if you are curious about it, please feel free to ask Kasia 
+
+calculate_mode <- function(x) {
+  uniqx <- unique(na.omit(x))
+  # this line creates a vector of unique values of x (in our case, Pulse)
+  uniqx[which.max(tabulate(match(x, uniqx)))]
+  # this line creates a table of the frequency of each unique value
+  # and then picks the value with the highest frequency
+}
+
+mode_pulse <- calculate_mode(NHANES$Pulse)
+mode_pulse
+
+```
+
+
+
+###  WK1-TOPIC2-PART 3   -  measures of spread -
+how similar or varied - over narrow or wide rrange 
+two main measure (SD or IQR)
+
+to build up the SD valcuation 
+* first you calcuate deviation  >> distance of a single o servation from the mean 
+* step 2:  Variacne  >>  s2   average of squares of the devaition 
+* sd <-  square root of the variance 
+* so devaition >>  square >> square root  
+* interquartile  is relationship with the **median**  not the mean  
+* IQR when plotted using boxplot >> median would be the value in the center (not the mean)
+
+*  When you tuse SD and when to use IQR
+** mean & SD is more to normal distribution 
+** IQR and median is better with skewed and extreme outliers  
+
+```{r spread  WK1 TOPIC 3 - PART 3}
+
+# Standard deviation
+sd_pulse <- sd(NHANES$Pulse, na.rm = TRUE)
+sd_pulse
+
+# Interquartile range
+iqr_pulse <- IQR(NHANES$Pulse, na.rm = TRUE)
+iqr_pulse
+
+
+```
+
+
+
+###  WK1-TOPIC2-PART 4   -  frequency distribution - visualization 
+*  Notice that we put Pulse on the y-axis, and level of physical activity on the x axis
+*  to stick with the convention **that boxplots are vertical**
+*  We've added a title and a label to the x-axis
+*  violin plot and wuffle plot   >>  if you like to plot distributions more  
+
+
+```{r frequency distribution - }
+
+# simplest histogram ----
+NHANES %>% 
+  ggplot(aes(x = Pulse)) +
+  geom_histogram()
+# Notice the warning messages telling you that the number of bins was set to the default 30
+# You can play around with the number of bins by putting bins = 10 (or another number of your choice)
+# inside the brackets after geom_histogram
+
+# slightly nicer histogram
+# In this version, we will change the number of bins to 10 (same as in our frequency table)
+# And we give details about the x-axis - we want it to run from 40 to 150,
+# with a tick every 10 points
+# Compare this histogram with the previous version using the arrows on the Plots panel
+
+NHANES %>% 
+  ggplot(aes(x = Pulse)) +
+  geom_histogram(bins = 10) +
+  scale_x_continuous(breaks=seq(40,150,10))
+
+# Boxplot ----
+# This is the default boxplot, and already looks fine
+# Notice how we put the Pulse variable on the y-axis (rather than x-axis, as we did in histogram)
+# It's a convention that boxplots are usually vertical rather than horizontal
+
+NHANES %>% 
+  ggplot(aes(y = Pulse)) +
+  geom_boxplot()
+
+# Multiple distributions at once 
+
+# Let's go back to our simple histogram, with 10 bins:
+NHANES %>% 
+  ggplot(aes(x = Pulse)) +
+  geom_histogram(bins = 10)
+
+# Facet wrap - multiple pulse distibuiton ----
+# Now we would like to see the distribution of pulse depending on the level of physical activity
+# We can do this using a function called facet_wrap
+# Run the chunk below and see what happens:
+
+NHANES %>% 
+  ggplot(aes(x = Pulse)) +
+  geom_histogram(bins = 10) +
+  facet_wrap(facets = NHANES$PhysActive) 
+
+# You should see 3 separate histograms, each for a different level of the PhysActive variable
+# (and a third one for people who had missing data on that variable)
+
+# improve the visulatization with descreption ----
+# Let's add a nice title to this graph:
+NHANES %>% 
+  ggplot(aes(x = Pulse)) +
+  geom_histogram(bins = 10) +
+  facet_wrap(facets = NHANES$PhysActive) +
+  labs(title = "Distribution of pulse depending on \nvigorous physical activity")
+
+# Let's do a similar exploration using a boxplot: ----
+NHANES %>% 
+  ggplot(aes(x = PhysActive, y = Pulse)) +
+  geom_boxplot() +
+  labs(title = "Do physically active people have lower pulse?",
+       x = "Moderate or vigorous physical activity")
+
+# Notice that we put Pulse on the y-axis, and level of physical activity on the x axis
+# to stick with the convention **that boxplots are vertical**
+# We've added a title and a label to the x-axis
+
+library(dplyr)
+library(forcats)
+NHANES %>% 
+  ggplot(aes(x = PhysActive, y = Pulse)) +
+  geom_bar(stat="identity", fill="#f68060", alpha=.6, width = .4) +
+  coord_flip() +
+  xlab("") +
+  theme_bw()
+
+```
+
+
+### WK1 - TOPIC 3  NORMAL DISTRIBUTION and its main characterisitics 
+histogram visualized distibution of numerical values 
+*  Normal distribution is common in nature 
+*  scaling histogram - Y axix is usually first the count 
+*  illusterating distibution > we can make Y axix is a density  > so we can calcuate the area in an area to it is the pobability of data in a specific area  
+*  curve >> smoothing hte distogram >> proability density funciton  
+*  we calcuate the proability for being in between the two lines in the last plot  >> if we know the mathematical equation 
+*  Normal distibution 
+**  symmetric
+**  unimodal (one mode)
+**  mean, meedian and mode <- same value 
+**  describe the curve using an equation **go for it more**
+**  emperical rule >>  m >> M+1sd   >>  m+2sd >> m+3sd (alpha)  >>  68% >> 95% >> 99.7
+
+```{r normal distribution visualizaiton}
+
+# We'll start with a histogram of height from the NHANES dataset ----
+# I picked height because I assume it will be normally distributed among adults
+
+NHANES %>% 
+  filter(Age > 17) %>% # filter the data to only include adults (18 or above)
+  ggplot(aes(x = Height)) +
+  geom_histogram(bins = 20) + # 20 bins was just a guess - you can try a different number
+  labs(title = "Height of adults in the NHANES study") # adding a title is always a good idea
+
+# adding the probability density function ----
+# notice the change on line 22 - we're scaling the histogram to have density instead of count
+# and we are adding a probability density line on line 23
+
+NHANES %>% 
+  filter(Age > 17) %>% 
+  ggplot(aes(x = Height)) +
+  geom_histogram(aes(y=..density..), bins = 20) +  # scale histogram y-axis
+  geom_density(col = "red")
+
+# This is how we added the blue and black line on slide 10 ----
+# geom_vline stands for a vertical line
+# we have to specify the intercept, colour and size
+
+NHANES %>% 
+  filter(Age > 17) %>% 
+  ggplot(aes(x = Height)) +
+  geom_density(col = "red") +
+  geom_vline(aes(xintercept = 180), color="blue", size=1) +
+  geom_vline(aes(xintercept = 190), color="black", size=1)
+
+```
+
+### WK 1 - TOPIC 4 -  Relationships 
+*  according to recap of data types numercial / categorical with its subsets 
+*  looks like in table / graph 
+*  calcualte statistics to tell about thie relationship
+*  two numercial values >>  scatterplot
+*  after plotting the line to see relationship 
+*  positive and negative 
+*  calcuate statistics >>  correlation coefficient (r) - strangth of linear relationship  ranging from -1 to 1
+*  positive values till max of 1 <- positive relationship 
+*  negative values till max of -1 <-  negative relationship
+*  function of tabyl (cross table)  >> when you can check the help of it -- and you will fund alot of varaitoin and it belongs to the library (janitor)
+*  forumla of the corelation coefficient  >> describe distance of each point on x axis from the mean expressed in sd unit >> same thing for the y values >> sd minus mean of y >> multiply both values by one another >> positive and negative and how relationship positive or negative gets into place >> then this is added to all points and devided by n-1  
+*  relationships between two categorical values >>  contingency table 
+*  to visualize the contengency table >> **bar chart** either stacked or grouped  
+*  we would need to group the values first as below 
+*  calculate the statistic of relationship between catoegorical values >>  chai squared  
+*  one numerical + one categorical  >>  boxplot  
+*  statistic for one categorical + 1 numerical   t test for 2 goups  / anova for more than 2 groups  
+
+```{r wk1-topic 4 - relationships }
+library(janitor)
+
+# We will be looking at the relationship between height and weight among adults ----
+# We intuitively know that, in this population, the taller people are, the heavier they tend to be
+# So, we expect these two variables to be correlated
+
+# Slide 6: simple scatterplot
+# Notice that we filter first, to only look at adults
+# And then we put height on the x-axis and weight on the y-axis
+# geom_point is what we use for a scatterplot
+NHANES %>% 
+  filter(Age > 17) %>% 
+  ggplot(aes(x = Height, y = Weight)) +
+  geom_point()
+
+# Slide 8: Now we add a line that illustrates the correlation----
+# geom_smooth plots the line to help you see a pattern
+# I picked a linear model (lm) method for fitting the line
+# See what will happen when you change the se argument to TRUE?
+NHANES %>% 
+  filter(Age > 17) %>% 
+  ggplot(aes(x = Height, y = Weight)) +
+  geom_point() +
+  geom_smooth(method=lm, se=TRUE)
+
+# Slide 19: Contingency table----
+# Let's look at a relationship between 2 categorical variables
+
+# Gender and level of physical activity
+# tabyl() is a function from the janitor package that creates nice tables
+# To make it even nicer, I used the kable() function from the knitr package
+NHANES %>% 
+  tabyl(Gender, PhysActive) %>% 
+  knitr::kable()
+
+# Let's create a similar table for the level of education and race
+NHANES %>% 
+  tabyl(Education, Race1) %>% 
+  knitr::kable()
+
+# Slide 21: visualising two categorical variables ----
+# stacked and grouped bar charts
+# We'll focus on gender and the level of ohysical activity
+
+# To make things easier, we'll start by making a table,
+# grouping the data into combinations of gender and physical activity
+# and counting up the number of observations in each cell (i.e. contingency table, just done another way)
+
+data <- NHANES
+data_for_stacked_bar <- NHANES %>% 
+  group_by(Gender, PhysActive) %>% 
+  summarise(n = n())
+
+# Let's see this table:
+data_for_stacked_bar
+
+# Now let's plot a stacked bar chart
+# Notice how we have three variables in the aesthetic: gender on the x-axis, number of observations on the y-axis,
+# and level of physical activity as the colour filling the bar
+# position="stack" determines that the bars will be stacked on top of one another
+data_for_stacked_bar %>% 
+  ggplot(aes(fill=PhysActive, y=n, x=Gender)) + 
+  geom_bar(position="stack", stat="identity")
+
+# Here we plot a grouped bar chart
+# Notice that the only difference is in line 77
+# where instead of position = "stack", we say position = "dodge",
+# telling the bars to be positioned next to one another
+data_for_stacked_bar %>% 
+  ggplot(aes(fill=PhysActive, y=n, x=Gender)) + 
+  geom_bar(position="dodge", stat="identity")
+
+
+```
+
+
+### WK 1 - CODEALONG 
+```{r}
+library(NHSRdatasets)
+##### take 2 ----
+# Load and explore the LOS_model dataset
+data("LOS_model")
+?LOS_model
+head(LOS_model)
+?head
+head(LOS_model, n = 3)
+
+##### take 3 ----
+# Let's change the Death variable into a factor, so it has meaningful categories, with labels "Survived" and "Died."
+LOS_model <- LOS_model %>%
+  mutate(Death = factor(as.character(Death), labels = c("Survived", "Died")))
+
+head(LOS_model)
+
+##### take 4 ----
+# Use the summary() function to calculate descriptive statistics for the dataset. Use the sd() function to calculate standard deviation.
+summary(LOS_model)
+sd(LOS_model$Age)
+sd(LOS_model$LOS)
+
+##### take 5 ----
+# Plot a histogram of Age in the sample.
+LOS_model %>%
+  ggplot(aes(x = Age)) +
+  geom_histogram()
+
+LOS_model %>%
+  ggplot(aes(x = Age)) +
+  geom_histogram(binwidth = 5, boundary = 5) +
+  scale_x_continuous(breaks = seq(5, 100, by = 5)) +
+  labs(title = "Distribution of age in the LOS dataset")
+
+
+##### take 6 ----
+# Create a box plot of the age distribution in the data. 
+LOS_model %>%
+  ggplot(aes(y = Age)) +
+  geom_boxplot() +
+  labs(title = "Distribution of age in the LOS dataset")
+
+LOS_model %>%
+  ggplot(aes(x = Organisation, y = Age)) +
+  geom_boxplot() +
+  labs(title = "Distribution of age in the LOS dataset, by trust")
+
+
+##### take 7 ----
+# Produce a bar chart of how many patients survived and died in each trust.
+LOS_model %>%
+  ggplot(aes(x = Organisation, fill = Death)) +
+  geom_bar(position = "stack") +
+  scale_fill_manual(values = c("gray", "red")) +
+  labs(title = "Patient outcomes across the NHS trusts",
+       fill = "Patient outcome")
+
+
+##### take 8 ----
+# Produce a table of the number of patients in each trust who died in hospital.
+LOS_model %>%
+  group_by(Organisation, Death) %>%
+  tally() %>%
+  filter(Death == "Died")
+
+
+##### take 9 ----
+# Let's create scatterplot of the relationship between length of stay in hospital and age. 
+LOS_model %>%
+  ggplot(aes(x = Age, y = LOS, colour = Death)) +
+  geom_point() +
+  labs(title = "Relationship between age and length of stay")
+
+
+
+##### take   ----
+# 
+
+```
+
+
+### WK 1 - LAB 
+*  mutate the content of a column from numbers 1 & 2 to male and female in the below preparation >> code would include 
+        mutate(preOp_gender = factor(preOp_gender, levels = c(0, 1), 
+                                       labels = c("Male", "Female")),
+                  preOp_smoking = factor(preOp_smoking, levels = 1:3, 
+                                labels = c("Current", "Past", "Never")),
+*  we also can see differentiation between tabyl & talbe functions -- it is not clear and both are used below in exercise 1  
+*  In exercise 3 >>  summarizing the and getting out the sd / mean/ media / iqr  >>> **with removing na**
+```{r WK1 LAB}
+### Week 1 lab - Describing data
+
+# In this self-guided lab, you will practice exploring data in R using visualisations, ----
+# tables and descriptive statistics.
+
+# The data we will be looking at come from a randomised controlled trial testing whether
+# the use of a licorice gargle before intubation for elective thoracic surgery 
+# reduces sore throat after the surgery. You can find more information about the dataset
+# and a codebook under licorice_gargle here: https://cran.r-project.org/web/packages/medicaldata/medicaldata.pdf
+
+# Let's start by installing the medicaldata package and loading it into R ----
+# install.packages("medicaldata")
+library(medicaldata)
+
+# We'll be using functions from the tidyverse library, so let's load it in too.
+library(tidyverse)
+
+# Now let's tell R that we'll be using the licorice_gargle data
+data("licorice_gargle")
+
+# And let's have a quick look at the dataset
+str(licorice_gargle)
+head(licorice_gargle)
+
+# You'll notice that all variables are recorded as numeric, even though some of them are  ----
+# categorical and should be recorded as factors. Let's fix this now, so we have a dataset
+# ready for analysis.
+
+licorice_gargle_clean <- licorice_gargle %>% 
+  mutate(preOp_gender = factor(preOp_gender, levels = c(0, 1), 
+                               labels = c("Male", "Female")),
+         preOp_smoking = factor(preOp_smoking, levels = 1:3, 
+                                labels = c("Current", "Past", "Never")),
+         treat = factor(treat, levels = c(0, 1),
+                        labels = c("sugar", "licorice")),
+         intraOp_surgerySize = factor(intraOp_surgerySize, levels = 1:3,
+                                      labels = c("Small", "Medium", "Large")),
+         pacu30min_cough = factor(pacu30min_cough, levels = 0:3,
+                                  labels = c("No cough", "Mild", "Moderate", "Severe")))
+
+# Please note: Pain was measured using an 11-point Likert scale, which simply means that
+# patients were asked to rate their pain on a scale between 0 and 10. 
+# We will analyse data from Likert scales as numeric.
+
+## Exercise 1 ----
+# In describing an RCT, we often want to know the demographic and baseline characteristics
+# of people in each group. This is to check whether the groups are similar (which is what
+# we would expect following a random assignment procedure)
+# Please check the baseline characteristics (gender, age, smoking status) of people 
+# in both groups. Do they look similar?
+# HINT: For categorical variables, try using the table function.
+# For numerical variables, first check the distribution (is it normal?), and then
+# try the group_by %>% summarise pattern,
+# calculating the appropriate statistics to describe the centre and spread.
+
+## Your solution below:
+names(licorice_gargle_clean)
+
+licorice_gargle_clean %>% 
+   tabyl(preOp_gender, preOp_smoking) %>% 
+   knitr::kable()
+
+table(licorice_gargle_clean$treat, licorice_gargle_clean$preOp_gender)
+
+table(licorice_gargle_clean$treat, licorice_gargle_clean$preOp_smoking)
+
+
+licorice_gargle_clean %>%
+  ggplot(aes(x = preOp_age)) +
+  geom_histogram() + 
+  facet_wrap(~treat)
+
+licorice_gargle_clean %>%
+  group_by(treat) %>%
+  summarise(median_age = median(preOp_age, na.rm = TRUE),
+            IQR_age = IQR(preOp_age, na.rm = TRUE))
+
+
+## Exercise 2 ----
+# Produce a bar chart that shows the distribution of smoking status in each group.
+# HINT: Use a grouped bar chart.
+
+## Your solution below:
+
+barchart1 <- licorice_gargle_clean %>%
+  ggplot() +
+  geom_bar(aes(x= preOp_smoking, fill = treat), position = "dodge")
+
+barchart1  
+
+barchart1 +
+  labs(title = "Smoking status in the sugar and licorice group",
+       x="Smoking status pre-op",
+       y="Number of people", 
+       caption = "Based on data from medicaldata package"
+       )
+
+## Exercise 3  ----
+# Does it look like the licorice gargle reduced throat pain 30 minutes after the surgery?
+# And what about cough?
+# Use a graph to answer each question. If helpful, you can also create a table.
+
+## Your solution below:
+licorice_gargle_clean %>% 
+  ggplot(aes(x=treat, y= pacu30min_throatPain)) +
+  geom_boxplot()
+
+licorice_gargle_clean %>%
+  group_by(treat) %>%
+  summarise(mean_pain = mean(pacu30min_throatPain, na.rm = TRUE),
+            sd_pain = sd(pacu30min_throatPain, na.rm = TRUE),
+            median_pain = median(pacu30min_throatPain, na.rm = TRUE),
+            iqr_pain = IQR(pacu30min_throatPain, na.rm = TRUE))
+
+licorice_gargle_clean %>%
+  ggplot(aes(x = treat, fill = pacu30min_cough)) +
+  geom_bar(position = "dodge")
+
+## Exercise 4 ----
+# Is there any evidence that in the intervention (licorice gargle) group, older people
+# experienced more post-operative throat pain?
+# Create a scatterplot to illustrate the relationship between age and throat pain at 30 minutes
+# after the surgery, and comment on your findings. 
+# Remember to filter the data, so you only look at the licorice condition. 
+
+## Your solution below:
+licorice_gargle_clean %>%
+  filter(treat == "licorice") %>%
+  ggplot() +
+  geom_point(aes(x = preOp_age, y = pacu30min_throatPain)) +
+  labs(title = "Do older people experience more pain at 30 minutes post-op?",
+       subtitle = "Results from the licorice gargle condition",
+       x = "Patient's age in years",
+       y = "Throat pain at 30 minutes post-op")
+## This is the end of the lab!
+## Now you're ready to complete the Week 1: 3 stars and a wish on the Discussion Board.
+
+```
+
+
+## WEEK 2
+
+### WK2 - Codealong 
+ggplot of the historgram  --- remvoe background & and and remove grid 
+* str() gives you an idea for all dataset 
+* we used the pull functions - to use the shapiro test - as it doesn't work well with tibble - it uses the height here as vector -- this is why the use of pull(height)
+```{r WK 2 - codealong }
+
+
+###############################################################################
+# EXAMPLE: Using a subset of NHANES with only male individuals aged 18 and over,
+#            check the normality assumption for the Height variables. 
+###############################################################################
+
+# Create a subset of the NHANES dataset with only male individuals aged 18 and over,
+# who have Height information
+subsetNHANES <-NHANES %>%
+  filter(Gender == "male", Age >= 18) %>% ## keep only male individuals aged 18 and over
+  drop_na(Height)                         ## remove rows where Height is missing (NA)
+
+# Checking the assumption of normal distribution of Height variable
+
+# Plot a histogram for Height
+subsetNHANES %>%                     ## Using the subsetNHANES filtered dataset,
+  ggplot(aes(x = Height)) +          ## set up the ggplot object with Height on the x-axis,
+  geom_histogram(col="black",        ## create the histogram with black lines around the boxes,
+                 fill="lightblue",   ## filled with the colour lightblue
+                 bins = 30 ) +       ## and with 30 bins in total
+  theme_bw() +                       ## remove gray background
+  theme(panel.grid=element_blank())  ## remove grid
+
+## The histogram has the symmetric bell shape characteristic of the normal distribution,
+## therefore the histogram suggests that the Height variable comes from a normal distribution.
+
+# Create a Normal Q-Q plot for Height
+subsetNHANES %>%                     ## Using the subsetNHANES filtered dataset,
+  ggplot(aes(sample=Height)) +       ## set up the ggplot object with Height as the sample
+  stat_qq() +                        ## draw the Q-Q plot
+  stat_qq_line(color=2) +            ## draw the normal line in red
+  labs(title="Normal Q-Q Plot") +    ## add title
+  theme_bw() +                       ## remove gray background
+  theme(panel.grid=element_blank())  ## remove grid
+
+## The Normal Q-Q plot follows the straight line very closely, despite a small deviation
+## at both ends of the distribution. The Q-Q plot also suggests a normal distribution.
+
+# Perform the Shapiro-Wilk test on the Height variable
+subsetNHANES %>%        ## Using the subsetNHANES filtered dataset,
+  pull(Height) %>%      ## take the Height variable and use it as a vector
+  shapiro.test()        ## perform the Shapiro-Wilk test on that Height vector
+
+# Base R alternative
+shapiro.test(subsetNHANES$Height)
+
+## The Shapiro-Wilk test of normality has a p-value of 0.02, this is below the
+## significance level of 0.05, therefore we can reject the null hypothesis that 
+## Height comes from a normal distribution, in other words the Height variable 
+## does not come from a normal distribution. However, 0.02 is quite close to 0.05,
+## and a small deviation will cause a significant result in large samples.
+## Here, we have n=3658 observations
+
+# Test for normality of Height using the Kolmogorov-Smirnov test
+subsetNHANES %>%                  ## Using the subsetNHANES filtered dataset,
+  pull(Height) %>%                ## take the Height variable and use it as a vector
+  ks.test(.,                      ## perform the Kolmogorov-Smirnov test on that Height vector
+          "pnorm",                ## set the theoretical distribution as the normal probability distribution
+          mean=mean(.),sd=sd(.))  ## estimate the mean and standard deviation from the Height sample
+
+# Here you will get warnings about ties as the Kolmogorov-Smirnov test doesn't 
+# expect any ties in a continuous distribution.
+## The Kolmogorov-Smirnov test has a p-value of 0.27, this is above the significance
+## level of 0.05, therefore we cannot reject the null hypothesis that Height comes
+## from a normal distribution, in other words, the Height variable comes from a normal distribution.
+
+## Overall, it seems to be reasonable to assume that Height is normally distributed.
+
+
+
+```
+
+
+### WK2 - LAB 
+Check normal distribution both by 
+* histogram 
+* QQ-plot 
+* shapiro-wilk 
+* kolmogrov-smirnov   ks.test(,."pnorm", mean=mean(.),sd=sd(.))  >>  this is after the load of df and then pull(variable)  as below 
+```{r WK 2 - LAB  CHECK NORMAL DISTRIBUTION }
+### Week 2 lab - Checking the normality assumption
+
+# In this self-guided lab, you will practice checking the assumption of normality in R using 
+# graphs and hypothesis tests.
+
+# We'll be using functions from the tidyverse library, so let's load it in too.
+library(tidyverse)
+
+## Exercise 1  ----
+# Using the NHANES dataset, imagine you want to investigate the difference in average diastolic
+# blood pressure (BPDiaAve) between adult males and females. The exercise here is to check 
+# whether the normality assumption holds for each subgroup, using both graphs and hypothesis 
+# tests.
+
+
+# We will be looking at the NHANES dataset, a survey dataset collected by the US National 
+# Center for Health Statistics (NCHS) which has conducted a series of health and nutrition 
+# surveys since the early 1960's. Since 1999, approximately 5,000 individuals of all ages are 
+# interviewed in their homes every year and complete the health examination component of the
+# survey. Find out more here: https://cran.rstudio.com/web/packages/NHANES/index.html, 
+# and check the reference manual for the R package:
+# https://cran.rstudio.com/web/packages/NHANES/NHANES.pdf
+
+# Let's start by installing the NHANES package and loading it into R
+install.packages("NHANES")
+library(NHANES)
+
+# Now let's tell R that we'll be using the NHANES data
+data("NHANES")
+
+# And let's have a quick look at the dataset
+str(NHANES)
+head(NHANES)
+
+# You'll notice that there are 76 variables and 10,000 observations in this dataset.
+# The variables are a mix of numerical and categorical variables. For this exercise,
+# we will focus on the numerical average diastolic blood pressure variable (BPDiaAve) and 
+# the categorical Gender variable.
+# Remember to filter the dataset based on the numerical Age variable to keep only adult 
+# individuals (aged 18 or over), and based on the Gender to look at each subgroup separately.
+
+## Your solution below:
+subsetNHANES <- NHANES %>% 
+  filter(Age >= 18) %>% 
+  drop_na(BPDiaAve, Gender) 
+
+# Then we can check the assumption of normal distribution of the BPDiaAve
+# variable. We can plot a histogram for BPDiaAve for each Gender.
+
+subsetNHANES %>% 
+  ggplot(aes(x= BPDiaAve)) +
+  geom_histogram(col="black", fill="lightblue", bins = 30) +
+  facet_wrap(~Gender) +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+
+# The histograms look close to normal, but there is a slightly longer left tail,
+# suggesting that the data has a negative (or left-) skew. We can also plot a
+# Normal Q-Q plot for BPDiaAve for each Gender.
+
+subsetNHANES %>%
+  ggplot(aes(sample=BPDiaAve)) +
+  stat_qq() +
+  stat_qq_line(color=2) +
+  facet_wrap(~Gender) + ## plot Q-Q plots for each gender side-by-side
+  labs(title="Normal Q-Q Plot") + ## add title
+  theme_bw() + ## remove gray background
+  theme(panel.grid=element_blank()) ## remove grid
+
+# The QQ-plots confirm the observations from the histogram and also show a
+# deviation from normality on the right-hand side of the plot.  
+
+# Moving on to hypothesis tests, we perform the Shapiro-Wilk test on the
+# BPDiaAve variable for each Gender 
+
+# Males
+
+subsetNHANES %>%
+  filter(Gender=="male") %>% ## keep only male individuals
+  pull(BPDiaAve) %>%
+  shapiro.test()
+
+# Females
+subsetNHANES %>%
+  filter(Gender=="female") %>% ## keep only female individuals
+  pull(BPDiaAve) %>%
+  shapiro.test()
+
+# We can also use the Kolmogorov-Smirnov test BPDiaAve to test for normality.
+
+# Males
+subsetNHANES %>%
+  filter(Gender=="male") %>% ## keep only male individuals
+  pull(BPDiaAve) %>%
+  ks.test(.,"pnorm",mean=mean(.),sd=sd(.))
+
+# Females
+subsetNHANES %>%
+  filter(Gender=="female") %>% ## keep only female individuals
+  pull(BPDiaAve) %>%
+  ks.test(.,"pnorm",mean=mean(.),sd=sd(.))
+
+# Both hypothesis tests show a significant departure from normality, although we
+# should keep in mind that they are sensitive to small departures, especially
+# when looking at a large dataset such as NHANES. The warning for the
+# Kolmogorov-Smirnov test means that there are some ties in the ranks of the
+# data. 
+
+# Overall, it seems like the distribution of the average diastolic blood
+# pressure is not quite normally distributed in either of the two Gender categories.
+
+
+## Exercise 2 ----
+# This time, we will use a simulated dataset of birthweights, and we will check again whether
+# the normality assumption holds.
+
+# First we create a dataset (tibble) of 1000 birth weights with a mean of 3510 grams and 
+# a standard deviation of 385 grams.
+
+birthweight <- tibble(
+  birthwt = rnorm(1000,3510,385)
+)
+
+# This creates a tibble named birthweight with one numerical variable named birthwt and
+# 1000 observations. TASK:   Does the birthwt variable have a normal distribution?
+
+## Your solution below:
+
+# We first plot a histogram of brithwt variable. 
+birthweight %>%
+  ggplot(aes(x = birthwt)) +
+  geom_histogram(col="black",fill="lightblue",bins = 35 ) +
+  theme_bw() + ## remove gray background
+  theme(panel.grid=element_blank()) ## remove grid
+
+# The histogram seems close to the bell shape expected for a normal
+# distribution. We can also create a Normal Q-Q plot for birthwt.
+
+birthweight %>%
+  ggplot(aes(sample=birthwt)) +
+  stat_qq() +
+  stat_qq_line(color=2) +
+  labs(title="Normal Q-Q Plot") + ## add title
+  theme_bw() + ## remove gray background
+  theme(panel.grid=element_blank()) ## remove grid
+
+# The Q-Q plot also suggests that the data follows the normal quantiles for most
+# of the data points, with a few data points at either end departing slightly
+# from it.
+
+# Moving on to hypothesis tests, we can perform the Shapiro-Wilk test on the birthwt variable.
+
+birthweight %>%
+  pull(birthwt) %>%
+  shapiro.test()
+
+# Finally, we can test for normality of birthwt using the Kolmogorov-Smirnov test.
+birthweight %>%
+  pull(birthwt) %>%
+  ks.test(.,"pnorm",mean=mean(.),sd=sd(.))
+
+# Both hypothesis tests give a p-value higher than 0.05, therefore we cannot
+# reject the null hypothesis that the data is normally distributed. 
+
+# Overall, it seems that the birthweight variable is normally distributed. You
+# might have noticed that the function we used to create that data was actually
+# sampling from a normal distribution, so we expected this to be normally
+# distributed.
+
+## This is the end of the lab!
+## Now you're ready to complete the Week 2: 3 stars and a wish on the Discussion Board.
+```
+
+
+## WEEK 3 Inferential statistics and hypothesis testing 
+
+### WK 3 - topic 1 -  Central limit theorom 
+
+```{r wk3 - topic 1 - central limit theorom }
+###  01 dice rolls  ----
+# Any line that starts with the character '#' is a 'comment', and is ignored 
+# when you run the code. You can use this fact to annotate your code, as I am
+# doing right now.
+
+# R files conventionally start with a bunch of library(...) statements
+# This loads up packages that other people have written for certain tasks
+# For example, tidyverse provides a set of commands for manipulating data
+# that is used ubiquitously in R.
+# ggplot is a package that is used almost universally for making plots
+# in R
+# We will be using both of these
+library(tidyverse)
+library(ggplot2)
+
+# First we are going to set up a vector of probabilities.
+# We're going to simulate rolling a die. The probabilities are all 1/6
+probabilities <- rep(1/6, times = 6)
+
+
+# The sample function draws random numbers
+#
+# The first argument tells it where to draw the numbers from; in this case
+# 1,2,3,4,5,6
+# The second argument tells it how many draws we want. In this case, 100.
+# The third argument tells it whether we want to draw with replacement or not.
+# Since we are thinking about rolling a die, we set this to TRUE
+# The last argument specifies the probability of each outcome.
+rolls <- sample(1:6, size = 100, replace = TRUE, prob = probabilities)
+
+
+# Right now, rolls is just a list of 100 dice rolls. We want to turn it into a 
+# structure called a dataframe.
+rolls_df <- data.frame(number_rolled = rolls)
+
+# After running this command, an object will have appeared in the panel on the right
+# called rolls_df. Click on it. You will see that it has an index running down 
+# the left hand side, and the results of the rolls in a column called 'rolls'
+
+
+# Now we are going to plot a histogram of the outcome of 100 rolls
+rolls_df %>% ggplot(aes(x=number_rolled) ) + 
+  geom_histogram(binwidth=1, fill = 'steelblue') +
+  scale_x_continuous(breaks = 1:6)
+
+# Have a look at the histogram that just appeared in the Plots tab in the 
+# bottom right corner. Does it look like you would expect it to?
+
+
+### 02 Sample mean functions ----
+# Load up the packages we need
+library(tidyverse)
+library(ggplot2)
+
+# Now were going to look at how the sample mean of our dice rolls is distributed
+#
+# A sample consists of a set of 100 die rolls
+# We will calculate the average value of the die rolls in a sample
+#
+# We will repeat this process for lots of samples. Then we will have a set 
+# of sample means, and we can plot their distribution.
+
+# We are going to do this using a function. A function takes some arguments,
+# carries out some procedure, then returns an output.
+#
+# It is vitally important to know how to write functions in any sort of 
+# programming.
+
+# In our case, we will write a function that takes as arguments:
+# n = sample size
+# And returns the sample mean of that many die rolls
+
+# Set up a vector of probabilities again
+probabilities <- rep(1/6, times = 6)
+
+# sample_mean is the name of our function
+sample_mean <- function(n){
+
+  # Note how size is set equal to n, which is an input to the function
+  rolls <- sample(1:6, size = n, replace = TRUE, prob = probabilities)
+  
+  return( mean(rolls) )
+}
+
+
+# Let's test out our new function!
+# Try running this multiple times, and experiment with different values for n
+sample_mean(100)
+
+### 03 Sample mean_distribution ----
+# Load up the packages we need
+library(tidyverse)
+library(ggplot2)
+
+# Let's continue with what we had before
+probabilities <- rep(1/6, times = 6)
+
+sample_mean <- function(n){
+  
+  # Note how size is set equal to n, which is an input to the function
+  rolls <- sample(1:6, size = n, replace = TRUE, prob = probabilities)
+  
+  return( mean(rolls) )
+}
+
+# Now we are going to generate many samples and calculate their mean using
+# our function, and a for loop.
+
+# Set the size of our samples
+n <- 10
+
+# Create an empty vector. This will be used to store the means of all our samples
+means <- c()
+
+# This for loop will calculate the means of 500 samples, where each sample
+# consists of 100 die rolls.
+for (i in 1:500){
+  means <- c(means, sample_mean(n))
+}
+
+# Make a dataframe out of our set of sample means
+means_df <- data.frame(sample_mean = means)
+
+# Now let's plot a histogram of sample means
+means_df %>% ggplot(aes(x=sample_mean) ) + 
+  geom_histogram(binwidth = 0.1, aes(y =..count../sum(..count..)),
+                 fill = 'steelblue') +
+  scale_x_continuous(breaks = seq( from = 1, to = 6, by = 0.5),
+                     limits = c(1,6)) +
+  # You don't need to fully understand the next few lines of code, but it is just 
+  # adding a red line that shows the normal distribution that approximates the 
+  # distribution of sample means according to the central limit theorem
+  stat_function(fun = function(x) dnorm(x, mean = 3.5, sd = sqrt(105/(36*n) )) * 0.1,
+                color = "red", size = 1) + 
+  ylab('Density') + xlab('Sample mean')
+
+
+# TASK: Run this code several times, from line 20 to line 45. Play with different
+# values for the sample size n. We started off with 100. Try very small values,
+# and very large values. Do you notice anything happening as the sample size gets
+# bigger or smaller?
+                     
+
+```
+
+
+### WK 3 - CODEALONG   
+
+```{r  WK 3 - Codealong   }
+
+# Any line that starts with the character '#' is a 'comment', and is ignored ----
+# when you run the code. You can use this fact to annotate your code, as I am
+# doing right now.
+
+# R files conventionally start with a bunch of library(...) statements
+# This loads up packages that other people have written for certain tasks
+# For example, tidyverse provides a set of commands for manipulating data
+# that is used ubiquitously in R.
+# NHANES stands for National Health and Nutrition Examination Survey
+# They collect health and nutrition data of people in the USA
+# https://www.cdc.gov/nchs/nhanes/index.html
+# BSDA is a basic statistics package
+# There is an R package associated with NHANES that has a sample dataset that
+# we use throughout this course.
+
+# Install required packages
+# install.packages('tidyverse')
+# install.packages('NHANES')
+# install.packages('BSDA')
+
+# Load required packages
+# library(tidyverse)
+# library(NHANES)
+# library(BSDA)
+
+##### Load in the NHANES sample dataset ----
+data(NHANES)
+
+# After running this command, an object called NHANES should appear in
+# the top right hand tab. Click on it and have a look what it consists of.
+# Use your favourite exploration functions (eg. head() or str())
+# to find out a few things about this dataset.
+
+##### Z-test ----
+
+# This code does a z-test for the hypothesis that the mean number of hours of 
+# sleep each night in the population is 7, assuming that the population standard
+# deviation is 1.5
+
+z.test(NHANES$SleepHrsNight, mu = 7, sigma.x = 1.5)
+
+### Question
+# What p-value did you get? How would you interpret it?
+### Answer
+# The p-value is very small. We are very unlikely to have seen this result
+# under the null hypothesis that mean hours of sleep each night is 7 hours.
+
+# 	One-sample z-Test
+# 
+# data:  NHANES$SleepHrsNight
+# z = -4.2546, p-value = 2.095e-05
+# alternative hypothesis: true mean is not equal to 7
+# 95 percent confidence interval:
+#  6.894146 6.960915
+# sample estimates:
+# mean of x 
+#  6.927531 
+
+
+
+
+##### Chi-squared test ----
+
+# Here, we will focus on the Gender and Education variables from the NHANES dataset
+# Are men's and women's education levels distributed in the same way?
+# Let's run a Chi-squared test to find out.
+
+# Create a contingency table with gender as row variable, and level of education
+# as the column variable.
+# Note that in creating the contingency table, we use the table() function that
+# you're already familiar with, and then we use the as.data.frame.matrix() command
+# to turn the table into a dataframe, which is easier to view and manipulate than a simple table.
+contingency_table <- as.data.frame.matrix(table(NHANES$Gender, NHANES$Education))
+contingency_table
+# After you run the last line, an object called contingency_table will appear
+# in the top right hand tab. Click on it. Is it what you expected?
+
+# This next line of code does a chi-squared test of whether the proportions of
+# men and women with each level of education are equal.
+chisq.test(contingency_table)
+
+### Question?
+# What did you learn from this test?
+
+
+##### One-sample t-test ----
+
+# This code does a one-sample t-test for the null hypothesis that average height
+# in the population is equal to 162cm
+t.test(NHANES$Height, mu = 162)
+
+# What is your interpretation of the results of this test?
+
+
+##### Two-sample t-test ----
+
+# We will do a t- test that the mean height of men and women in the population
+# is equal. Do you expect a high or low p-value for this test?
+
+# Select the heights of the men
+# Use the 'pull' function to put those values into a vector
+# The pull function is equivalent to using the $ sign, but is more
+# tidyverse-friendly.
+male_heights <- NHANES %>% filter(Gender == 'male') %>% pull(Height)
+
+# Select the heights of the women
+# Use the 'pull' function to put those values into a vector
+female_heights <- NHANES %>% filter(Gender == 'female') %>% pull(Height)
+
+# Do a two-sample t-test
+t.test(male_heights, female_heights)
+
+# Alternatively, you can use the formula notation:
+# In this case, you don't need vectors.
+# You can simply provide the dependent variable (here: Height)
+# and the name of the variable that has the 2 groups
+# that you want to compare (here: Gender)
+# You also need to provide the name of the data object (here: NHANES)
+t.test(Height ~ Gender, data = NHANES)
+
+# How would you interpret the result of this test?
+# Is it what you expected?
+
+
+# The Welch Two Sample t-test was chosen over the standard t-test due to its
+# ability to handle unequal variances between the two groups, making it a more
+# appropriate choice for comparing the heights of males and females in this
+# scenario. The significant p-value and the confidence interval both strongly
+# suggest that there is a true difference in mean heights between males and
+# females in the sampled population.
+
+
+```
+### WK03 - LAB
+
+```{r WEEK 3 - LAB }
+
+## Exercise 1 ----
+
+# Explore the relationship between education level and home ownership. Are
+# people with different levels of education all equally likely to own their
+# homes? Use the Education and HomeOwn variables from the NHANES dataset.
+
+contingency_table <- as.data.frame.matrix(table(NHANES$Gender, NHANES$Education))
+contingency_table
+# After you run the last line, an object called contingency_table will appear
+# in the top right hand tab. Click on it. Is it what you expected?
+
+# This next line of code does a chi-squared test of whether the proportions of
+# men and women with each level of education are equal.
+chisq.test(contingency_table)
+
+# Here we see that there is evidence to reject the null hypothesis that there is no relationship between the
+# Education and HomeOwn variables (χ2 = 221.470, p < 0.005). This allows us to infer that there is an
+# association between education and home ownership and indeed conclude that people across different levels of
+# education are not equally likely to become home owners.
+
+## Exercise 2 ----
+# The minimum recommended amount of sleep for adults is 7 hours. Use the appropriate hypothesis test to check whether the average sleep time is significantly different from 7 hours, based on data from NHANES. 
+
+t.test(NHANES$SleepHrsNight, mu = 7)
+
+# Using a one sample t-test, we can test whether the true mean of the amount of
+# sleep for adults using the SleepHrsNight variable in the NHANES data set. Here
+# we see that the x¯ = 6.928 with CI = [6.896, 6.958]. The test provides
+# evidence to reject the null that the mean is equal to 7 (t = −4.739, p <
+# 0.005). We therefore say there is evidence the average time asleep is
+# different from 7. We cannot infer which way
+
+
+## Exercise 3 ----
+# There is evidence that people who are physically active tend to have better mental health. Test this hypothesis using the NHANES data: 
+# - Run a test to check whether people who are physically active, also report fewer days when their mental health was not good.
+# - Write an interpretation of the results.
+# Use the PhysActive and DaysMentHlthBad variables from the NHANES dataset.
+
+female_heights <- NHANES %>% filter(Gender == 'female') %>% pull(Height)
+
+Phys <- NHANES %>% pull(PhysActive) %>% as.numeric() %>% na.omit()
+Ment <- NHANES %>% pull(DaysMentHlthBad) %>% as.numeric() %>% na.omit()
+str(NHANES$DaysMentHlthBad)
+t.test(Ment, Phys)
+
+	# Welch Two Sample t-test
+
+# data:  Phys and Ment
+# t = -28.406, df = 7587.8, p-value < 2.2e-16
+# alternative hypothesis: true difference in means is not equal to 0
+# 95 percent confidence interval:
+#  -2.745345 -2.390899
+# sample estimates:
+# mean of x mean of y 
+#  1.558371  4.126493 
+
+#### this is the test in the solution -  i don't know why the result is different from the above ----
+t.test(DaysMentHlthBad ~ PhysActive, data = NHANES)
+
+# 	Welch Two Sample t-test
+# 
+# data:  DaysMentHlthBad by PhysActive
+# t = 9.0843, df = 5895.7, p-value < 2.2e-16
+# alternative hypothesis: true difference in means between group No and group Yes is not equal to 0
+# 95 percent confidence interval:
+#  1.336522 2.072092
+# sample estimates:
+#  mean in group No mean in group Yes 
+#          5.089357          3.385049 
+
+
+# Here we use a two-sample Welch t-test to determine whether there is evidence
+# that people who are physically active tend to have better mental health. This
+# considers whether the means of days with bad mental health variable when
+# grouped by the ‘YES’ and ‘NO’ groups in the physically active variable. We may
+# reject the null hypothesis that the difference between the means of the ‘NO’
+# and ‘YES’ groups is less than or equal to 0 (t = 9.084, p < 0.005). This means
+# we can conclude that there is evidence that those who are more physically
+# active report fewer days when their mental health is bad.
+
+```
+
+
+
+## WEEK 4 ANALYSIS OF VARIANCE (ANOVA)
+
+### WK04 CODEALONG 
+*  levels()  >>  showed heere the levels of catergorical variable  
+*  how many observations of the column table(dataset1$Work)
+```{r WK 4 CODEALONG }
+
+# Installing packages - uncomment the lines below if you need to install. ----
+# install.packages("NHANES")
+# install.packages("tidyverse")
+# install.packages("emmeans")
+# install.packages("car")
+ 
+# Loading libraries
+library(NHANES) # for the dataset
+library(tidyverse) # for wrangling and plotting
+library(emmeans) # for post-hoc tests
+library(car) # for Levene's test
+
+# NULL HYPOTHESIS: Working status doesn't affect the number of hours of sleep per night ----
+
+summary(NHANES) # to see descriptive statistics of all variables
+
+# We will keep only adults (aged 18 and over)
+# and three variables: HealthGen, SleepHrsNight, and Work
+dataset1 <- NHANES %>% 
+  filter(Age > 18) %>%
+  select(HealthGen, SleepHrsNight, Work)
+
+summary(dataset1)
+# we see that there are three categories for the Work variable
+# this shows that Work has 1 missing value (NA) and SleepHrsNight has 17
+head(dataset1)
+# We see that the Work variable is a factor
+# How many levels (or categories) does Work have?
+# Using base R
+levels(dataset1$Work)
+
+# How many observations in each Work group?
+# Using base R
+table(dataset1$Work)
+
+# Using the Tidyverse
+dataset1 %>%
+  pull(Work) %>% # extract Work as a vector (of factor type)
+  fct_count() 
+
+
+# As seen in the summary() output, Work has three categories:
+# Looking, NotWorking and Working
+
+# Check the general structure of our dataset1
+str(dataset1)
+
+# Calculate the mean number of hours slept at night for each Work category
+# The group_by() function will run subsequent functions separately for each
+# category of the Work variable.
+dataset1 %>%
+  group_by(Work) %>%
+  summarise(mean=mean(SleepHrsNight))
+# The NA results are caused by missing values for SleepHrsNight in all three 
+# Work categories
+
+# So we will update dataset1 by removing the rows with missing Work or SleepHrsNight data
+# Note that there are many other ways to deal with missing data, not covered here
+# If we don't remove missing data at the start, we will need to add the na.rm=T
+# argument to functions like mean(), sd(), var(), etc.
+
+# Add the na.rm = TRUE argument in the mean function to remove only missing data 
+# within that function call.
+dataset1 %>% 
+  group_by(Work) %>% 
+  summarise(mean = mean(SleepHrsNight, na.rm = TRUE))
+
+# Update dataset1 to remove all rows with missing data for either SleepHrsNight or Work
+dataset1 <- dataset1 %>% 
+  drop_na(SleepHrsNight,Work)
+
+# Now we can calculate the mean, standard deviation and variance for SleepHrsNight
+# for each Work category
+sleep_descriptives_by_workingstatus <- dataset1 %>%
+  group_by(Work) %>%
+  summarise(mean=mean(SleepHrsNight),
+            sd = sd(SleepHrsNight),
+            var = var(SleepHrsNight))
+# View the summary statistics tibble we just created
+sleep_descriptives_by_workingstatus
+# This table suggests that Working individuals have slightly less sleep than others,
+# especially when compared with NotWorking individuals.
+
+# Boxplot to visualise differences before ANOVA  ----
+dataset1 %>%
+# colour each boxplot by working status with the fill argument
+  ggplot(aes(x = Work, y = SleepHrsNight, fill = Work)) +
+  geom_boxplot() +
+  # add a title for the plot
+  labs(title = "Figure 1: Boxplot of Hours of Sleep by Work situation")
+
+# The boxplots seem very similar, symmetrical around the centre, and 
+# with similar centre and variability across categories,
+# but large sample sizes might bring small differences out.
+
+# Perform the ANOVA  ----
+ANOVA1 <- aov(SleepHrsNight~Work, data=dataset1)
+# This doesn’t give any output, for that you need to use the summary() function.
+# The summary() function will create a table with one row for each categorical 
+# variable and each interaction term, if you have any.
+summary(ANOVA1)
+# There is one row for the Work variable, which shows the among group information,
+# and one row for the residuals.
+# For each row, there is the number of degrees of freedom, the sum of squares,
+# and the mean square
+# For the Work variable (treatment, or explanatory variable), there is also 
+# the F-value and the associated p-value.
+# Here the df for Work is 3 (Work categories) - 1 = 2
+# df for the residuals = 7354 observations - Work categories = 7351
+# Work Sum of squares = differences among Work categories
+# Residual Sum of squares = variation within Work categories
+# Mean Square = SS / df
+# F = MS among / MS within = 48.99 / 1.77
+# Small p-value: strong evidence that Work category influences the number of 
+# hours of sleep at night
+
+# POST-HOC TESTS  ----
+# Evidence for differences among Work categories
+# Compare means among Work categories
+anova1_emmeans <- emmeans(ANOVA1,"Work")
+anova1_emmeans
+# This outputs a table with a row for each Work category
+# It gives a mean, standard error, number of df,
+# lower and upper boundaries of the confidence intervals for
+# these means. The standard error uses the standard deviation
+# of the residuals estimated from the model
+# SE = SD / sqrt(n)
+SD_residuals<-sigma(ANOVA1)
+n_looking<-dataset1 %>%
+  group_by(Work) %>%
+  count(Work) %>%
+  filter(Work=="Looking") %>%
+  ungroup() %>%
+  select(n)
+SE_looking<-SD_residuals/sqrt(n_looking) # 0.0801
+
+# Pairwise comparisons  ----
+anova1_pairs <- pairs(anova1_emmeans)
+anova1_pairs
+# estimate = effect size, difference between means for pairs of Work categories
+# e.g. Looking - NotWorking = 7-7.04 = -0.04
+# SE = standard error for this difference / effect size
+# t.ratio and p.value are t-statistic and p-value for Tukey's 
+# test with H0: the difference between the means = 0
+# Highly significant for NotWorking vs Working
+# **Tukey's** "Honest Significant Differences" test 
+# corrects for multiple pairwise tests,
+# therefore no increase of type 1 error
+
+# Similar output, with 95% CI, also corrected for multiple
+# testing, instead of t-statistic and p-value
+confint(anova1_pairs)
+# Largest difference (NotWorking vs Working) has a positive
+# adjusted 95% CI, doesn't overlap 0
+
+# Plot confidence intervals
+plot(confint(anova1_pairs))
+
+# ASSUMPTIONS  of the ANOVA
+# 1) Independent data
+# 2) Normality
+# 3) Homogeneity of variance
+
+# 1) Independent data
+
+# As we've seen before, each row of the NHANES dataset should be a 
+# different individual, therefore the assumption of independence is met.
+
+# 2) Normality
+
+# Histogram
+dataset1 %>% 
+  ggplot(aes(x = SleepHrsNight)) +
+  geom_histogram(bins = 10) +
+  facet_wrap(facets = ~Work, ncol = 1, scales = "free_y")
+
+# Q-Q plot to assess normal distribution of SleepHrsNight
+ggplot(dataset1, aes(sample = SleepHrsNight)) +
+  stat_qq() + # this line plots the error terms
+  stat_qq_line() # this line plots the regression line
+# The histograms and Q-Q plot suggest that SleepHrsNight comes from a normal
+# distribution.
+
+# Shapiro-Wilk normality test   ----
+# shapiro.test(dataset1$SleepHrsNight)
+# The error message says we can't have more than 5000 observations.
+
+# We create a random sample of dataset1 with just 4000 observations.
+sample <- slice_sample(dataset1, n = 4000)
+shapiro.test(sample$SleepHrsNight)
+# Significant departure from normality, maybe due to large sample.
+
+# 3) Homogeneity of variance ----
+
+# Boxplot as before
+dataset1 %>% 
+  ggplot(aes(x = Work, y = SleepHrsNight, fill = Work)) +
+  geom_boxplot() +
+  labs(title = "Figure 1: Boxplot of Hours of Sleep by Work situation") 
+
+# The boxplots suggest that there is equal variance  of
+# SleepHrsNight between Work categories
+# Can also use Bartlett's test of homogeneity of variances
+# H0: variances are equal across groups
+bartlett.test(dataset1$SleepHrsNight~dataset1$Work)
+# Or Levene's test if the variable is not normally distributed
+# Levene's test with one independent variable
+leveneTest(SleepHrsNight ~ Work, data = dataset1)
+
+## BONUS PLOT ----
+## Residual plot to see if the residuals are similarly distributed across groups.
+
+# Create a tibble with the fitted values, residuals and Work category
+Model <- tibble(Fitted = fitted(ANOVA1), # extracts fitted values from ANOVA1
+                Residuals = resid(ANOVA1), # extracts residuals from ANOVA1
+                Work = dataset1$Work) # takes the Work categories from dataset1
+
+# Create a residual plot for the ANOVA model, which shows the residuals for 
+# each Work category The residuals on the y-axis are the differences between 
+# the actual data points and the fitted values. The fitted values on the x-axis
+# are the means for each treatment. We expect residuals to have a mean of 0 if
+# there is a symmetric distribution of SleepHrsNight for each Work category.
+# The residuals shouldn't show any pattern and be roughly evenly distributed 
+# above and below 0.
+ggplot(Model, aes(Fitted, Residuals, colour = Work)) +
+  geom_point()
+
+```
+
+
+### WK04 LAB
+
+```{r WK 4 - LAB}
+# Week 4 lab - ANOVA with the NHANES dataset
+
+### Introduction ###
+
+# In this self-guided lab, you will be running an ANOVA. We will be using
+# a significance level of 5% throughout.
+
+# We'll be using functions from the tidyverse collection of packages, as
+# well as from the emmeans package, and we will use the NHANES dataset
+# again, so let's load them in.
+
+library(tidyverse)
+library(emmeans)
+library(NHANES)
+
+# The messages above are telling us which functions from the base R are
+# overwritten by functions from the Tidyverse, and that some packages were
+# set up using a previous version of R.
+
+### ANOVA exercise ###
+
+# Let's explore whether people who watch more TV also tend to have a
+# higher body mass index (BMI), indicating that they are more likely to be
+# overweight or obese. We will use a one-way ANOVA to answer this
+# question.
+
+# In order to meet the assumptions for ANOVA, we will restrict the NHANES
+# dataset a little bit. This is just for demonstration purposes, if you
+# were given a real dataset, you would need to analyse the whole dataset,
+# rather than restricting it.
+
+# Let's create a new dataset, called NHANES_ANOVA, where we will create a
+# new version of the variable about watching TV - my TV_categorical
+# variable will only have 3 levels, and it will indicate whether someone
+# watches TV less than the median (i.e.less than 2 hours a day), at the
+# median (2 hours a day), or more than the median (3 or more hours). We
+# will also filter out people with BMI over 40 (again, this is for
+# demonstration purposes only).
+
+NHANES_ANOVA <- NHANES %>% 
+  # creating a TV_categorical variable with 3 levels
+  mutate(TV_categorical = case_when(TVHrsDay == "0_hrs"|TVHrsDay == "0_to_1_hr"|
+                                      TVHrsDay == "1_hr" ~ "less_than_median",
+                                    TVHrsDay == "2_hr" ~ "median",
+                                    TVHrsDay == "3_hr"|TVHrsDay == "4_hr"|
+                                      TVHrsDay == "More_4_hr"
+                                    ~ "more_than_median")) %>% 
+  # removing people with a missing value for TV_categorical
+  drop_na(TV_categorical) %>%
+  # filtering out people with BMI of 40 or more
+  filter(BMI < 40)
+
+# Now we will have a quick look at our NHANES_ANOVA subset to see how many
+# people there are in each category.
+
+table(NHANES_ANOVA$TV_categorical)
+
+## Task 1: Dataset exploration.
+
+# Let's create a box plot and a table of summary statistics including mean
+# and standard deviation to see what the pattern is for BMI across
+# TV_categorical groups. Based on the descriptive statistics and the
+# boxplot, what pattern do you see in the data?
+
+## Your solution
+NHANES_ANOVA %>%
+  ggplot(aes(x = TV_categorical, y = BMI)) +
+  geom_boxplot()
+
+NHANES_ANOVA %>%
+  group_by(TV_categorical) %>%
+  summarise(mean_BMI = mean(BMI, na.rm = TRUE),
+  sd_BMI = sd(BMI, na.rm = TRUE))
+
+# The BMI variable has a higher median in the group with the individuals who
+# watch TV for more hours than the median than in both other groups, with a
+# larger difference between the group with the least hours of TV watched and the
+# group with the most hours of TV watched. The variance seems similar between
+# the groups.
+
+## Task 2: ANOVA
+
+# Let's run an ANOVA to test if what we're seeing is statistically
+# significant. How would you interpret the results of the ANOVA?
+
+## Your solution
+
+ANOVA1 <- aov(BMI~TV_categorical, data = NHANES_ANOVA)
+summary(ANOVA1)
+
+# The p-value for the F-statistic of the ANOVA is highly significant
+# (p<2.2x10-16), suggesting that there is an overall effect of the number of
+# hours of TV watched on the BMI of individuals.
+
+## Task 3: Post-hoc tests
+
+# As you know, ANOVA is an omnibus test, so it doesn't tell us where the
+# significant differences lie. We need to look at post-hoc comparisons to
+# tell us which groups are different. Let's do it using Tukey's HSD test
+# for each pairwise comparison. We would like to get the differences in
+# means, their test statistic and associated p-value, standard error and
+# confidence interval. How would you interpret the results of this test?
+
+## Your solution
+anova1_emmeans <- emmeans(ANOVA1,"TV_categorical")
+anova1_emmeans
+
+anova1_pairs <- pairs(anova1_emmeans)
+anova1_pairs
+
+# All three pairwise comparisons are significant at the 5% significance level,
+# with all p-values smaller than 0.002 and 95% confidence intervals not
+# overlapping 0. The largest difference in means is -2.348 for the comparison
+# between the more_than_median and the less_than_median groups.
+
+
+## Task 4: Checking the assumptions.
+
+# Let's check the assumptions.
+
+#-   4.1. Independence. Would you say that the data meet the independence
+#    assumption? Are the groupings independent of one another? Is each
+#    observation independent of the others?
+
+#-   4.2. Homogeneity of variance. Does the BMI variable have a similar
+#    variance among the three groups? Run a Bartlett's test to check. How
+#    would you interpret the results of this test?
+  
+#-   4.3. Normality. Does the BMI variable come from a normal
+#    distribution? Use both visual inspection of the distribution and
+#    hypothesis test. How would you interpret the plot and the test
+#    results?
+
+## Your solution
+
+# Create a histogram of BMI at each level of TV_categorical.
+NHANES_ANOVA %>%
+  ggplot(aes(x = BMI)) + geom_histogram(bins = 10) +
+  facet_wrap(facets = ~TV_categorical, ncol = 1, scales = "free_y")
+
+# Let's run the Shapiro-Wilk normality test.
+shapiro.test(NHANES_ANOVA$BMI)
+
+# The Shapiro-Wilk test has a very low p-value (p<2.2e-16), suggesting that the
+# BMI variable doesn’t come from a normal distribution. The large sample size
+# may be picking a small deviation from the normal distribution, so this result
+# alone doesn’t mean that the assumption of normality is not met.
+
+```
+
+
 ## WEEK 5 
 ### wk05_t01
 Correlation coefficients 
@@ -433,13 +2065,13 @@ library(NHANES)
 
 # Create a subset of the NHANES dataset with only male individuals aged 18 and over,
 # who have both BPDiaAve and BPSysAve information
-subsetNHANES <-NHANES %>%
+subsetNHANES2 <-NHANES %>%
   filter(Gender == "male", Age >= 18) %>%
   drop_na(BPDiaAve,BPSysAve) %>% # remove rows where either BPDiaAve or BPSysAve is NA
   select(BPDiaAve,BPSysAve)
 
 # Create a scatterplot for BPDiaAve (x axis) and BPSysAve (y axis)
-subsetNHANES %>%
+subsetNHANES2 %>%
   ggplot(aes(x = BPDiaAve, y = BPSysAve)) + 
   geom_point(pch=20) + # plot the data points and change the dot shape / size
   xlab("Combined diastolic blood pressure reading (mm Hg)") + 
@@ -451,34 +2083,36 @@ subsetNHANES %>%
 # and display the output as a tibble (table) with columns for the coefficient 
 # estimate, t-statistic, p-value, degrees of freedom, lower and upper bound of 
 # the 95% confidence interval
-subsetNHANES %>%
-  summarize(Pearsonr = cor.test(BPDiaAve,BPSysAve,method="pearson")$estimate,
-            tstat = cor.test(BPDiaAve,BPSysAve,method="pearson")$statistic,
-            pval = cor.test(BPDiaAve,BPSysAve,method="pearson")$p.value,
-            df = cor.test(BPDiaAve,BPSysAve,method="pearson")$parameter,
-            lowerCI = cor.test(BPDiaAve,BPSysAve,method="pearson")$conf.int[1],
-            upperCI = cor.test(BPDiaAve,BPSysAve,method="pearson")$conf.int[2])
+
+# subsetNHANES2 %>%
+#   summarize(Pearsonr = cor.test(BPDiaAve,BPSysAve,method="pearson")$estimate,
+#             tstat = cor.test(BPDiaAve,BPSysAve,method="pearson")$statistic,
+#             pval = cor.test(BPDiaAve,BPSysAve,method="pearson")$p.value,
+#             df = cor.test(BPDiaAve,BPSysAve,method="pearson")$parameter,
+#             lowerCI = cor.test(BPDiaAve,BPSysAve,method="pearson")$conf.int[1],
+#             upperCI = cor.test(BPDiaAve,BPSysAve,method="pearson")$conf.int[2])
 
 # Base R alternative to get the same information
-with(subsetNHANES,cor.test(BPDiaAve,BPSysAve,method="pearson"))
-cor.test(subsetNHANES$BPDiaAve,subsetNHANES$BPSysAve,method="pearson")
+with(subsetNHANES2,cor.test(BPDiaAve,BPSysAve,method="pearson"))
+cor.test(subsetNHANES2$BPDiaAve,subsetNHANES2$BPSysAve,method="pearson")
 
 # Calculate Spearman's correlation coefficient between BPDiaAve and BPSysAve
 # and display the output as a tibble (table) with columns for the coefficient 
 # estimate, S-statistic, and p-value
-subsetNHANES %>%
-  summarize(Spearmanrho = cor.test(BPDiaAve,BPSysAve,method="spearman")$estimate,
-            Sstat = cor.test(BPDiaAve,BPSysAve,method="spearman")$statistic,
-            pval = cor.test(BPDiaAve,BPSysAve,method="spearman")$p.value)
+
+# subsetNHANES2 %>%
+#   summarize(Spearmanrho = cor.test(BPDiaAve,BPSysAve,method="spearman")$estimate,
+#             Sstat = cor.test(BPDiaAve,BPSysAve,method="spearman")$statistic,
+#             pval = cor.test(BPDiaAve,BPSysAve,method="spearman")$p.value)
 
 # Base R alternative to get the same information
-with(subsetNHANES,cor.test(BPDiaAve,BPSysAve,method="spearman"))
+with(subsetNHANES2,cor.test(BPDiaAve,BPSysAve,method="spearman"))
 # You will get a warning here as there are too many ties for the ranks so R cannot
 # compute an exact p-value
 
 # Build a linear regression model to predict BPSysAve based on BPDiaAve
 # using the subsetNHANES dataset and save the output as an object called lmodel
-lmodel <- lm(BPSysAve ~ BPDiaAve, data = subsetNHANES)
+lmodel <- lm(BPSysAve ~ BPDiaAve, data = subsetNHANES2)
 
 # Display the coefficients (b0: intercept and b1: slope) for the model
 lmodel$coefficients
@@ -501,7 +2135,7 @@ predict(lmodel, newdata = data.frame(BPDiaAve=c(100)),se.fit = T)
 
 
 # Create the scatterplot, and this time add the regression line to it
-subsetNHANES %>%
+subsetNHANES2 %>%
   ggplot(aes(x = BPDiaAve, y = BPSysAve)) + 
   geom_point() + 
   xlab("Combined diastolic blood pressure reading (mm Hg)") + 
@@ -518,7 +2152,7 @@ subsetNHANES %>%
 
 # Create a subset of the NHANES dataset with only male individuals aged 18 and over,
 # who have BPSysAve information and MaritalStatus either Married or NeverMarried 
-subsetNHANES <-NHANES %>%
+subsetNHANES2 <-NHANES %>%
   filter(Gender == "male"& Age >= 18 & 
            MaritalStatus %in% c("Married","NeverMarried")) %>%
   drop_na(BPSysAve) %>% # remove rows where BPSysAve is NA
@@ -528,7 +2162,7 @@ subsetNHANES <-NHANES %>%
 
 # Plot a histogram for BPSysAve for each marital status 
 # the facets - by facet grid to separate the two marital statuses  
-subsetNHANES %>%
+subsetNHANES2 %>%
   ggplot(aes(x = BPSysAve)) + 
   geom_histogram(col="black",fill="lightblue",bins = 30 ) +
   facet_grid(~MaritalStatus) +
@@ -536,7 +2170,7 @@ subsetNHANES %>%
   theme(panel.grid=element_blank())  ## remove grid
 
 # Create a Normal Q-Q plot for BPSysAve
-subsetNHANES %>%
+subsetNHANES2 %>%
   ggplot(aes(sample=BPSysAve)) +
   stat_qq() +
   stat_qq_line(color=2) +
@@ -547,28 +2181,28 @@ subsetNHANES %>%
 
 # Perform the Shapiro-Wilk test on the BPSysAve variable for
 # Married individuals
-subsetNHANES %>%
+subsetNHANES2 %>%
   filter(MaritalStatus == "Married") %>%
   pull(BPSysAve) %>%
   shapiro.test()
 
 # Perform the Shapiro-Wilk test on the BPSysAve variable for
 # NeverMarried individuals
-subsetNHANES %>%
+subsetNHANES2 %>%
   filter(MaritalStatus == "NeverMarried") %>%
   pull(BPSysAve) %>%
   shapiro.test()
 
 # Test for normality of BPSysAve using the Kolmogorov-Smirnov 
 # test for Married individuals
-subsetNHANES %>%
+subsetNHANES2 %>%
   filter(MaritalStatus == "Married") %>%
   pull(BPSysAve) %>%
   ks.test(.,"pnorm",mean=mean(.),sd=sd(.))
 
 # Test for normality of BPSysAve using the Kolmogorov-Smirnov 
 # test for NeverMarried individuals
-subsetNHANES %>%
+subsetNHANES2 %>%
   filter(MaritalStatus == "NeverMarried") %>%
   pull(BPSysAve) %>%
   ks.test(.,"pnorm",mean=mean(.),sd=sd(.))
@@ -584,7 +2218,7 @@ subsetNHANES %>%
 
 # Optional
 # Plot a histogram for log(BPSysAve) for each marital status
-subsetNHANES %>%
+subsetNHANES2 %>%
   ggplot(aes(x = log(BPSysAve))) + 
   geom_histogram(col="black",fill="lightblue",bins = 30 ) +
   facet_grid(~MaritalStatus) +
@@ -598,20 +2232,20 @@ subsetNHANES %>%
 # dataset, we would check whether the variances were similar in both groups
 
 # Visualise the variation for each group in a box plot
-subsetNHANES %>%
+subsetNHANES2 %>%
   ggplot(., aes(x=MaritalStatus, y = BPSysAve)) +
   geom_boxplot(col="black",fill="lightblue") +
   theme_bw() +                       ## remove gray background
   theme(panel.grid=element_blank())  ## remove grid
 
 # Display the standard deviations of both groups
-subsetNHANES %>%
+subsetNHANES2 %>%
   group_by(MaritalStatus) %>%
   summarise(sd = sd(BPSysAve))
 
 # Perform an F-test to test whether the variance in BPSysAve is similar for
 # males and females
-subsetNHANES %>%
+subsetNHANES2 %>%
   var.test(BPSysAve ~ MaritalStatus, ., alternative = "two.sided")
 
 # You can run the non-parametric Levene's test of variances. For this you may
@@ -620,7 +2254,7 @@ subsetNHANES %>%
 
 # Load the car package
 library("car")
-subsetNHANES %>%
+subsetNHANES2 %>%
   leveneTest(BPSysAve ~ MaritalStatus, data = .)
 
 ## The box plots suggest that the spread is similar between the two groups.
@@ -714,10 +2348,11 @@ newsubsetNHANES %>%
 # Calculate Spearman's correlation coefficient between PhysActiveDays and BPSysAve
 # and display the output as a tibble (table) with columns for the coefficient 
 # estimate, S-statistic, and p-value
-newsubsetNHANES %>%
-  summarize(Spearmanrho = cor.test(PhysActiveDays,BPSysAve,method="spearman")$estimate,
-            Sstat = cor.test(PhysActiveDays,BPSysAve,method="spearman")$statistic,
-            pval = cor.test(PhysActiveDays,BPSysAve,method="spearman")$p.value)
+
+# newsubsetNHANES %>%
+#   summarize(Spearmanrho = cor.test(PhysActiveDays,BPSysAve,method="spearman")$estimate,
+#             Sstat = cor.test(PhysActiveDays,BPSysAve,method="spearman")$statistic,
+#             pval = cor.test(PhysActiveDays,BPSysAve,method="spearman")$p.value)
 
 # Base R alternative to get the same information
 with(newsubsetNHANES,cor.test(PhysActiveDays,BPSysAve,method="spearman"))
@@ -747,6 +2382,214 @@ newsubsetNHANES %>%
 
 # Neither method finds a significant association between PhysActiveDays
 # and BPSysAve.
+
+```
+### WK05_LAB
+
+```{r WK05_LAB}
+## Exercise 1 ----
+
+# From NHANES investigate the correlation between UrineFlow1 and UrineVol1 in
+# adult males visually and numerically. We will consider that these variables
+# are normally distributed for this exercise.
+
+
+subsetNHANES <- NHANES %>%
+  filter(Gender == "male", Age >= 18) %>%
+  drop_na(UrineFlow1,UrineVol1) # remove rows where either UrineFlow1 or UrineVol1 is NA
+
+dim(subsetNHANES)
+
+# There are 3446 rows in that data subset, so 3446 adult males have information
+# for both UrineFlow1 and UrineVol1. Let’s create a scatterplot for UrineFlow1
+# (x axis) and UrineVol1 (y axis)
+
+subsetNHANES %>%
+  ggplot(aes(x = UrineFlow1, y = UrineVol1)) +
+  geom_point(pch=20) + # plot the data points and change the dot shape / size 
+  xlab("Urine flow rate, first test (mL/min)") +
+  ylab("Urine volume, first test (mL)") +
+  theme_bw() + ## remove gray background 
+  theme(panel.grid=element_blank()) ## remove grid
+
+# The scatterplot seems to show a linear positive relationship, we can
+# investigate further with a correlation.As the task says to consider these
+# variables as normally distributed (even though they are not), we will use the
+# parametric Pearson’s product-moment coefficient to calculate the correlation
+# between them.Let’s calculate Pearson’s correlation coefficient between
+# UrineFlow1 and UrineVol1 and display the output as a tibble (table) with
+# columns for the coefficient estimate, t-statistic, and p-value.
+
+# subsetNHANES %>%
+#   summarize(Pearsonr = cor.test(UrineFlow1,UrineVol1,method="pearson")$estimate,
+#             tstat = cor.test(UrineFlow1,UrineVol1,method="pearson")$statistic,
+#             pval = cor.test(UrineFlow1,UrineVol1,method="pearson")$p.value)
+
+# Pearson’s product moment correlation coefficient is quite high and highly
+# significant (r = 0.53, t = 37.78, p < 0.005). So there is a significant
+# positive linear relationship between the Urine flow rate and Urine volume in
+# adult males.
+
+## Exercise 2 ----
+
+# Using the same dataset as in Exercise 1, build a simple linear regression
+# model to predict UrineVol1 based on UrineFlow1 in adult males. Report its
+# parameters, assess its quality and determine whether the model assumptions
+# hold.
+#
+# Let’s build a linear regression model to predict UrineVol1 based on UrineFlow1
+# using the subsetNHANES dataset and save the output as an object called lmodel.
+
+lmodel <- lm(UrineVol1 ~ UrineFlow1, data = subsetNHANES)
+
+
+# Now we can extract the model coefficients and their 95% confidence intervals.
+# We can also display a summary of the linear model, including: the variables
+# and dataset used; summary statistics for the distribution of the residuals;
+# the coefficient estimates and their associated standard error, t-value and
+# p-value; model measure of quality (e.g. residual standard error, adjusted
+# R-squared and F statistic).
+
+lmodel$coefficients
+confint(lmodel)
+summary(lmodel)
+
+
+# The regression coefficient for UrineFlow1 is 48.2 [95% CI: 45.6-50.8] and the
+# linear model intercept is 83.6 [95% CI: 79.8-87.4]. So an increase of 1 mL/min
+# of urine flow rate is associated with an increase of 48.2 mL in urine volume.
+# Both coefficients are significantly different from 0 ($\beta_{1}$: t = 36.78,
+# p < 0.005; $\beta_{0}$: t = 42.73, p < 0.005). The model explains 28% of the
+# variance in the response variable UrineVol1 ($R^{2}$ = 0.28). The residual
+# standard error is a bit high (77.7), so there is some deviation of the
+# response variable UrineVol1 from the regression line, but the F statistic is
+# high (F = 1353), suggesting a significant relationship between UrineFlow1 and
+# UrineVol1.
+#
+# We can now check whether the assumptions of the linear regression model hold.
+# We will first look at the assumption of constant variability of the residuals.
+
+# Produce a residual vs. fitted plot
+ggplot(lmodel, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(aes(yintercept=0),color="red") + 
+  labs(y='Residuals',x='Fitted values') +
+  theme_bw() + ## remove gray background 
+  theme(panel.grid=element_blank()) ## remove grid
+
+# This plot suggests some non-random patterns of distribution of the residuals.
+# It is likely that this assumption is not met. Then we can check the assumption
+# of normal distribution of the residuals.
+
+# Get the list of residuals
+res <- resid(lmodel)
+
+# Plot a histogram for the residuals
+res %>%
+  as_tibble() %>%
+  ggplot(aes(x = res)) + 
+  geom_histogram(col="black",fill="lightblue",bins = 30 ) + 
+  theme_bw() + ## remove gray background 
+  theme(panel.grid=element_blank()) ## remove grid
+
+# Create a Normal Q-Q plot for the residuals
+res %>%
+  as_tibble() %>%
+  ggplot(aes(sample=res)) +
+  stat_qq() +
+  stat_qq_line(color=2) +
+  labs(title="Normal Q-Q Plot") +
+  theme_bw() +
+  theme(panel.grid=element_blank()) ## remove grid
+
+# Perform the Shapiro-Wilk test on the residuals
+shapiro.test(res)
+
+
+# The histogram suggests a right skew, and the Q-Q plot show that there is some
+# deviation from the normal distribution. The Shapiro-Wilk test also has a very
+# low p-value (W = 0.93, p < 0.005). It seems like the assumptions of the
+# regression model don’t hold, so it is probably necessary to transform the
+# variable.
+
+## Exercise 3 ----
+#
+# If you were to investigate the difference in UrineFlow1 between adult males
+# and females, check whether the assumptions for parametric tests hold.
+#
+# Let’s create a new subset of NHANES with only adults with Gender and
+# UrineFlow1 information.
+
+
+subsetNHANES2 <- NHANES %>%
+  filter(Age >= 18) %>% # keep only adults
+  drop_na(UrineFlow1, Gender) # remove individuals with either missing Gender or UrineFlow
+
+
+# First we will test the assumption of normality. When comparing the means of
+# two different independent groups (such as male vs female heights), both sets
+# of data are assumed to be normal, and both should be tested either
+# individually. Let’s create a histogram of UrineFlow1 for each Gender. We will
+# also create a Normal Q-Q plot for UrineFlow1 for each Gender and perform the
+# Shapiro-Wilk test on each gender.
+
+
+subsetNHANES2 %>%
+  ggplot(aes(x = UrineFlow1)) +
+  facet_wrap(~Gender) + 
+  geom_histogram(col="black",fill="lightblue",bins = 30 ) + 
+  theme_bw() + ## remove gray background 
+  theme(panel.grid=element_blank()) ## remove grid
+
+subsetNHANES2 %>%
+  ggplot(aes(sample=UrineFlow1)) +
+  stat_qq() +
+  stat_qq_line(color=2) +
+  facet_wrap(~Gender) +
+  labs(title="Normal Q-Q Plot") +
+  theme_bw() +
+  theme(panel.grid=element_blank()) ## remove grid
+
+subsetNHANES2 %>%
+  filter(Gender == "male") %>%
+  pull(UrineFlow1) %>%
+  shapiro.test()
+
+subsetNHANES2 %>%
+  filter(Gender == "female") %>%
+  pull(UrineFlow1) %>%
+  shapiro.test()
+
+# The histograms, Q-Q plots and Shapiro-Wilk tests (p < 0.005) all suggest that
+# UrineFlow1 is not normally distributed for either Gender, therefore we would
+# perform non-parametric tests (or transform the data). We will now look at the
+# assumption of homogeneity of variances. We can first create a boxplot for
+# UrineFlow1 for both genders.
+
+subsetNHANES2 %>%
+  ggplot(aes(x = Gender, y = UrineFlow1)) + 
+  geom_boxplot(col="black",fill="lightblue") +
+  theme_bw() + ## remove gray background 
+  theme(panel.grid=element_blank()) ## remove grid
+
+# We will also display the standard deviations of UrineFlow1 for both groups.
+
+subsetNHANES2 %>%
+  group_by(Gender) %>%
+  summarise(sd = sd(UrineFlow1))
+
+# Finally, we use the F-test of homogeneity of variances
+
+subsetNHANES2 %>%
+  var.test(UrineFlow1 ~ Gender, data = .)
+
+
+# The boxplot, standard deviations, and F-test (F=0.85, df=3528, p=1.22x10-6)
+# all suggest that the variances are equal between the two groups. Overall,
+# since the data is not normally distributed, it would be best to transform the
+# data, or use non- parametric tests.
+# 
+
 
 ```
 
