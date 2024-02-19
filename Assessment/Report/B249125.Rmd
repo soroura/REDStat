@@ -1,20 +1,20 @@
 ---
 title: "Physical Activity in Relation to Health Outcome and Longevity in Care Home in Scotland"
 author: "Exam Number:  B249125"
-date: "Introduction to statistics in health and social care (2023-2024)"
 output:
   pdf_document:
     extra_dependencies: 
       caption: ["labelfont={bf}"]
       fancyhdr: null
     toc: true          # Include a table of contents
-    toc_depth: 3       # Depth of headings to include in the table of contents
+    toc_depth: 2       # Depth of headings to include in the table of contents
     number_sections: false # Number the sections
     latex_engine: xelatex  # Use XeLaTeX engine for better font support
     includes:
       in_header: header.tex  # Include additional LaTeX commands in the header from a file
     fig_caption: true  # Enable figure captions
     df_print: kable    # Use kable for printing data frames
+bibliography: Care homes physical Activity.bib
 header-includes:
   - \usepackage{fancyhdr}  # Custom headers and footers
   - \usepackage{geometry}
@@ -30,48 +30,48 @@ geometry: margin=1    in
 
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, 
+                      fig.width = 6, fig.height = 3)
 ```
 
 
 ### 
-
+\newpage
 # Introduction
-
-This study explores a dataset from two fictitious Scottish care homes in an effort to learn more about the relationship between senior citizens' health outcomes, demographics, and physical activity. Through a thorough examination of demographic and baseline data, our goal is to identify patterns and trends that may guide focused actions.
-
-We also investigate the relationship between the physical environment of the care home and the physical activities that the residents participate in, carefully examining the possible effects on their longevity and general well-being.
+Care homes provide accommodation, personal care and support, and/or onsite nursing care for people who can no longer live independently in their own homes according to [@goodman_effective_2016].  Admission to a care home is often associated with further functional and health decline and associated adverse outcomes such as increased mortality and reduced quality of life [@luppa_prediction_2010].  
+This report explores a data gathered from two Scottish care homes in an effort to learn more about the relationship between senior citizens' health outcomes, demographics, and physical activity. Through a thorough examination of demographic and baseline data, our goal is to identify patterns and trends that may guide public decisions to promote the increase in activity levels in order to aim for better health conditions and longevity.
 
 In an effort to add to the growing body of knowledge on healthy aging, special attention is paid to comprehending the relationship between BMI and moderate physical activity. The results of this investigation have the potential to improve the quality of life for residents of care homes by providing practical advice.
 
+Using Body Mass Index (BMI) is an acceptable measurement for determining the health, physical fitness, and activity level of a given population that lacks regular high-intensity physical activity [@ding_relationship_2020].
+
+The report will try here to first explore the data gathered and see the pattern of participants in terms of base demographic, physical level, and BMI level. 
+If we find a relationship between physical activity type and level of moderate activity with longevity, this can encourage us to seek further promotion and encouragement to integrate such measures in care homes in Scotland.  
+
+So let's go step by step to see what this data can tell us.  
+
+
 ## Load data
 
-Let's go on to the analysis of the given dataset in R, answering each of these questions individually. I'm going to begin by loading the dataset and doing some initial data investigation.
-
+Let's go on to the analysis of the given dataset in R, answering each of these questions individually. First here we are going to load the dataset and do some initial data investigation.
 ```{r load libraries and data }
 
 pacman::p_load(data.table, rio, here, dplyr, epikit, janitor, lubridate, ggplot2, 
                crosstable, stringr, gtsummary, flextable, Hmisc, scales, incidence, 
                tidyverse, kableExtra, knitr, flextable, tidyr, fancyhdr)
-
 carehome_data <- import(here("Assessment/Report/carehomedata_assessment2024.csv"))
 carehome_data <- carehome_data %>% clean_names()
-head(carehome_data)
-
+summary(carehome_data)
 ```
 
-After the dataset was successfully imported into our R environment, a comprehensive preliminary assessment is to be carried out  carried out to guarantee data quality and preparation for analysis. The participants' demographic and baseline characteristics will be examined as the next step.
+After the dataset was successfully imported into our R environment, a comprehensive preliminary assessment is to be carried out carried out to guarantee data quality and preparation for analysis. The participants' demographic and baseline characteristics will be examined as the next step.
 
-In order to determine the age distribution, gender ratio, BMI ranges, and degree of moderate physical activity among people, this step will involve producing descriptive data. The objective is to lay the groundwork for a deeper analysis of the population being studied, with a focus on the connections between physical activity patterns, health outcomes, care home conditions, and lifespan. This methodical methodology guarantees that the conclusions drawn later are based on a solid examination of the core characteristics of the dataset.
+In order to determine the age distribution, gender ratio, BMI ranges, and degree of moderate physical activity among people, this step will involve producing descriptive data. 
+The objective is to lay the groundwork for a deeper analysis of the population being studied, with a focus on the connections between physical activity patterns, health outcomes, care home conditions, and lifespan. This methodical methodology guarantees that the conclusions drawn later are based on a solid examination of the core characteristics of the dataset.
 
-
-
-# Demographics and Baseline Characteristics (Question 1)
-In order to understand the data, some descreptive statistics is done to learn about the demographics and baseline statistics.   
-
+# Demographics and Baseline Characteristics (Question no. 1)
+In order to understand the data, some descriptive statistics is done to learn about the demographics and baseline statistics.   
 ```{r  demographics and baseline table 1}
-
-
 descriptive_stats <- carehome_data %>%
   summarise(
     min_participant_id = min(participant_id),
@@ -92,34 +92,29 @@ descriptive_stats <- carehome_data %>%
     max_bmi = max(bmi, na.rm = TRUE)
   )
 
-# Convert descriptive_stats to a more table-friendly format
-# Here, we're pivoting the dataframe to have a variable and value format
 descriptive_stats_long <- descriptive_stats %>%
-  pivot_longer(cols = everything(), names_to = "Statistic", values_to = "Value")
-
+  pivot_longer(cols = everything(), names_to = "Measure", values_to = "Value")
 descriptive_stats_long
-
 ```
 ###
+The exploration here aims to see every variable of the provided data and explore what it can tell us to have a better idea of this study population and how they are doing at the two care homes.  
 
-There are 341 people in the dataset, and their IDs range from 1 to 341. The age range of the participants during recording is 66.53 to 93.49 years, with an average of 79.85 years and a standard deviation of 5.18 years. 
-
-The average age of death is determined to be 81.52 years, with a standard deviation of 5.50 years and a range of 67.39 to 96.87 years.
-
-The average percentage of time that individuals spent engaging in moderate physical activity was 49.73%, with a standard deviation of 9.93%. 
-
-The BMI measurement ranges from 19.27 to 29.81, with a standard deviation of 1.80 and an average of 24.92. Participants are split almost evenly between the two assisted living facilities.
+## Highlights from the above table
+*  There are 341 people in the dataset, and their IDs range from 1 to 341. 
+*  The age range of the participants during recording is 66.53 to 93.49 years, with an average of 79.85 years and a standard deviation of 5.18 years. 
+*  The average age of death is determined to be 81.52 years, with a standard deviation of 5.50 years and a range of 67.39 to 96.87 years.
+*  The average percentage of time that individuals spent engaging in moderate physical activity was 49.73%, with a standard deviation of 9.93%. 
+*  The BMI measurement ranges from 19.27 to 29.81, with a standard deviation of 1.80 and an average of 24.92. Participants are split almost evenly between the two care home facilities.
 
 ## Visualizaiton of the demographics and baseline characteristics 
 In order to visualize the data, and see the current baseline comparing the two care homes against each other, we can check the following in details: 
 
 ### Age at recoding
-
 ```{r visualize age at recording }
-
-carehome_data$group <- factor(carehome_data$carehome_id, levels = c(1, 2), labels = c("Carehome 1", "Carehome 2"))
-
-ggplot(carehome_data, aes(x = age_at_recording, y = ..density.., fill = group, color = group)) +
+carehome_data$group <- factor(carehome_data$carehome_id, levels = c(1, 2), 
+                        labels = c("Carehome 1", "Carehome 2"))
+ggplot(carehome_data, aes(x = age_at_recording, y = ..density.., 
+                          fill = group, color = group)) +
   geom_histogram(data = subset(carehome_data, carehome_id == 1),
                  binwidth = 1, alpha = 1.5) +
   geom_histogram(data = subset(carehome_data, carehome_id == 2),
@@ -127,18 +122,15 @@ ggplot(carehome_data, aes(x = age_at_recording, y = ..density.., fill = group, c
   scale_fill_manual(values = c("Carehome 1" = "lightblue", "Carehome 2" = "red")) +
   scale_color_manual(values = c("Carehome 1" = "blue", "Carehome 2" = "darkred")) +
   theme_minimal() +
-  labs(title = "Overlapping Histograms of Age at Recording by Care Home",
-       x = "Age at Recording", y = "Density")
-
+  labs(title = "Age at Recording by Care Home",
+       x = "Age at Recording in the two care homes overlapping", y = "Density")
 ```
 
 For the participants age, in numerical terms, one might say, The majority of our participants are __clustered around their late 70s to early 80s__, with fewer individuals below 70 or above 90. 
 
 
 ### Age at death
-
 ```{r visualize age at death }
-
 carehome_data$group <- factor(carehome_data$carehome_id, levels = c(1, 2), labels = c("Carehome 1", "Carehome 2"))
 
 ggplot(carehome_data, aes(x = age_at_death, y = ..density.., fill = group, color = group)) +
@@ -149,16 +141,14 @@ ggplot(carehome_data, aes(x = age_at_death, y = ..density.., fill = group, color
   scale_fill_manual(values = c("Carehome 1" = "lightblue", "Carehome 2" = "red")) +
   scale_color_manual(values = c("Carehome 1" = "blue", "Carehome 2" = "darkred")) +
   theme_minimal() +
-  labs(title = "Overlapping Histograms of Age at death by Care Home",
-       x = "Age at Death", y = "Density")
-
+  labs(title = "Age at death by Care Home",
+       x = "Age at Death in overlapping histogram for 2 carehomes", y = "Density")
 ```
 The average age of death is determined to be 81.52 years, with a standard deviation of 5.50 years and a range of 67.39 to 96.87 years.
 
 ### Gender distribution  
 
-```{r}
-
+```{r sex distribution}
 # Grouped bar chart for sex distribution within each care home
 ggplot(carehome_data, aes(x = as.factor(carehome_id), fill = sex)) +
   geom_bar(position = "dodge") +
@@ -167,16 +157,12 @@ ggplot(carehome_data, aes(x = as.factor(carehome_id), fill = sex)) +
   labs(title = "Grouped Bar Chart of Sex Distribution by Care Home",
        x = "Care Home ID",
        y = "Count")
-
 ```
-
 The sex distribution are very close especially in care home 2 and with sligh increase in males in the care home 1.  
 
-### BMI distibution between the two homes 
-
+### BMI distibution between the two care homes 
 
 ```{r BMI distribution in both care homes }
-
 carehome_data$group <- factor(carehome_data$carehome_id, levels = c(1, 2), labels = c("Carehome 1", "Carehome 2"))
 
 ggplot(carehome_data, aes(x = bmi, y = ..density.., fill = group, color = group)) +
@@ -195,9 +181,8 @@ As mentioned before, the participants' Body Mass Index (BMI) ranges from a minim
 As the histogram shows there is big overlap between the two care homes in the ranges with a normally distributed shape for the BMI in each one of them.   
 
 ### Activity type distribution between the two care homes
-```{r Activity type between two care homes}
 
-# Bar chart for physical activity types by care home
+```{r Activity type between two care homes}
 ggplot(carehome_data, aes(x = factor(physical_activity, levels = c("sitting", "low", "light", "moderate")), fill = as.factor(carehome_id))) +
   geom_bar(position = "dodge") +
   scale_fill_brewer(palette = "Pastel1", name = "Care Home ID") +
@@ -205,14 +190,12 @@ ggplot(carehome_data, aes(x = factor(physical_activity, levels = c("sitting", "l
   labs(title = "Physical Activity Types by Care Home",
        x = "Physical Activity Type",
        y = "Count")
-
 ```
 
-Also this is an almost even distribution of the four types of physical activity ranging between low, light, moderate and sitting and almost very close levels when comparing the two care homes as seen above.  
+When comparing the two care facilities as shown above, there is also an almost equal distribution of the four categories of physical activity, which range from low, light, moderate, and seated to practically extremely close levels.  
 
 
 ### Distribution of moderate activity comparing the two care homes (Percentage of time each individual spent undertaking activity classified as moderate)
-
 ```{r distribution of moderate activity by care homes}
 # histograms with density on the y-axis
 carehome_data$group <- factor(carehome_data$carehome_id, levels = c(1, 2), labels = c("Carehome 1", "Carehome 2"))
@@ -225,21 +208,22 @@ ggplot(carehome_data, aes(x = moderate_activity, y = ..density.., fill = group, 
   scale_fill_manual(values = c("Carehome 1" = "lightblue", "Carehome 2" = "red")) +
   scale_color_manual(values = c("Carehome 1" = "blue", "Carehome 2" = "darkred")) +
   theme_minimal() +
-  labs(title = "Overlapping Histograms of BMI by Care Home",
-       x = "Body Mass Index (BMI)", y = "Density")
+  labs(title = "Overlapping Histograms of Moderate Activity by Care Home",
+       x = "Percentage of time spent in moderate activity", y = "Density")
 ```
+
 On average, participants across both care homes engaged in moderate activity around 49.73% of the time indicating a generally active lifestyle among the residents. 
 
 The difference in moderate activity levels between the two care homes is relatively small.  Care home 1 in blue may show higher activity especially at different points which suggests slightly more active or engaged resident population when it comes to moderate physical activities. 
 
 
-#  Association between the care home and type of physical activity first and the with the moderate activity level (Question 2)
+#  Association between the care home and type of physical activity and also level of  moderate activity level (Question no. 2)
+To answer the question regarding the association between care home and the type of physical activity undertaken, and if a longer amount of moderate activity is observed depending on the care home. 
+A statistical test called chi-square  of independence can be used for the first part to analyze the association between categorical variables (care home and type of physical activity). 
 
-To answer the question regarding the association between care home and the type of physical activity undertaken, and if a longer amount of moderate activity is observed depending on the care home, a chi-square test of independence can be used for the first part to analyze the association between categorical variables (care home and type of physical activity). 
+For the second part, another statistical test called t-test can be used to compare the means of moderate activity between the two care homes if the data meets the assumptions for these tests.
 
-For the second part, a t-test or ANOVA can be used to compare the means of moderate activity between the two care homes if the data meets the assumptions for these tests.
-
-## first part -- chi squire  
+## First Part; chi-square  
 The results of the chi-square test will show if there's a statistically significant association between care home and physical activity type. A significant result suggests that the type of activity depends on the care home. 
 
 ```{r}
@@ -254,37 +238,32 @@ chi_square_result <- chisq.test(contingency_table)
 print(chi_square_result)
 
 ```
-The Pearson's Chi-squared test result with a chi-square statistic of 1.0714, degrees of freedom (df) = 3, and a p-value of 0.784 suggests that there is no statistically significant association between the care home and the type of physical activity undertaken by individuals. The high p-value (greater than the typical alpha level of 0.05) indicates that any observed differences in activity types across care homes are likely due to chance rather than a systematic relationship.
+The purpose of the Pearson's Chi-squared test is to determine whether there is a relationship between two categorical variables—in this case, the residents' types of physical activity and the care facility. A chi-square statistic value of 1.0714 was obtained from the test. Although this figure may seem abstract on its own, it is a component of the p-value calculation, which indicates the likelihood that any apparent correlation between these variables was the result of chance.
+
+The p-value, which came out at 0.784, is an important component of this puzzle. We can interpret our results by comparing this value to a standard threshold (alpha level) of 0.05. Our p-value, which is much larger than 0.05, indicates that there may be random variation rather than a particular pattern or trend to be the cause of the variations in physical activity kinds that we observe amongst care homes.
+
+Put another way, this high p-value suggests that there is insufficient data to conclude that a person's kind of physical activity is significantly influenced by the sort of care home they live in. 
 
 
 ## Second part  
-The t-test or ANOVA will indicate if there's a significant difference in moderate activity times between the care homes, with a significant result suggesting that residence in a particular care home might influence the amount of moderate activity undertaken by individuals.
 
-```{r}
+The second section of the analysis compares the average amount of time spent in each of the two care homes using a t-test to see whether there are any differences. The mean moderate activity levels are compared using the t-test, which assumes, until otherwise demonstrated, that there is no significant difference.
 
-# Filter the data for care homes 1 and 2
+```{r conducting t-test for moderate activity}
 carehome1_data <- filter(carehome_data, carehome_id == 1)
 carehome2_data <- filter(carehome_data, carehome_id == 2)
 
-# Perform an independent two-sample t-test
 t_test_result <- t.test(carehome1_data$moderate_activity, carehome2_data$moderate_activity, var.equal = TRUE)
-
-# Print the results
 print(t_test_result)
 ```
-The results from the two-sample t-test indicate that the t-value is 0.17578 with 339 degrees of freedom, and the p-value is 0.8606. The p-value is much higher than the conventional threshold of 0.05, suggesting that there is no statistically significant difference in the mean moderate activity levels between the two care homes. In other words, the average amount of moderate activity undertaken by individuals does not significantly differ depending on the care home they reside in.
+In order to determine whether there is a discernible difference, we compared the average levels of physical activity between two care facilities using a statistical technique known as a t-test. The test yielded a p-value of 0.8606, significantly higher than the typical 0.05 cut-off threshold. Given the large p-value, it is likely due to chance that the two care facilities' levels of physical activity differ, and it is not significant enough to conclude that one encourages more moderate activity than the other.
 
-The 95% confidence interval for the difference in means ranges from -1.929110 to 2.307742, which includes zero. This further supports the conclusion that there is no significant difference between the two groups, as the confidence interval suggests that the true difference in means could be as low as approximately -1.93 or as high as approximately 2.31, but still includes the possibility of no difference (zero).
-
-The selection of the t-test for this analysis was based on the objective to compare the means of a continuous variable (moderate activity levels) between two independent groups (the two care homes). The t-test is an appropriate statistical tool for this purpose when the data meets the assumptions of normality and equal variances between the two groups. In this context, the test was used to determine if residing in a particular care home has an effect on the amount of moderate activity individuals undertake, and the results suggest that the care home does not have a significant impact on moderate activity levels.
+Additionally, we examined a measure known as a 95% confidence interval, which spans from roughly -1.93 to 2.31. This range includes zero, which in this case indicates that there may not be much of a difference in activity levels. This interval essentially confirms our first conclusion, which was that there is little data to suggest that a resident's choice of care home influences their level of moderate activity. This conclusion clarifies that the tenants' activity levels in these residences may not be determined by their surroundings.
 
 # Physical activity and longevity (Question no. 3)  
 This quesiton explores whether the data provide any evidence that those who are more physically active live longer. It requires a formal recommendation on whether an intervention should be provided based on these results. This question aims to explore the relationship between physical activity and longevity, and it's essential to use appropriate statistical methods to analyze this relationship and provide clear understandable recommendations.
 
-
-
-```{r}
-
+```{r moderate activity relation to age at death}
 ggplot(carehome_data, aes(x = moderate_activity, y = age_at_death)) +
   geom_point(alpha = 0.5) +  # Plot the individual data points
   geom_smooth(method = "lm", color = "red") +  # Add a linear regression line
@@ -293,20 +272,20 @@ ggplot(carehome_data, aes(x = moderate_activity, y = age_at_death)) +
        x = "Moderate Activity",
        y = "Age at Death")
 
-
 # Perform linear regression
 model <- lm(age_at_death ~ moderate_activity, data = carehome_data)
 
-# Summary of the regression model
 summary(model)
-
 ```
-The linear regression analysis indicates no significant relationship between moderate activity and age at death. The coefficient for moderate activity is 0.02580, meaning for each unit increase in moderate activity, age at death increases by about 0.026 years, but this is not statistically significant (p-value = 0.391). The model explains a very small portion of the variance in age at death (Multiple R-squared: 0.00217), suggesting other factors not included in the model might be more influential in determining longevity.
+To find any possible proof that more physical activity could result in a longer life, statistical analysis is used to examine the relationship between physical activity and lifespan. This investigation is essential when deciding whether to suggest programs meant to increase levels of physical activity in order to improve longevity.
+
+We plotted the ages of participants at death against their levels of moderate exercise using a graphical approach. To find any trends, this image was used with a linear regression analysis. The study did find a modest increase in lifespan—roughly 0.026 years for every unit increase in activity—for moderate activity, with a coefficient of 0.02580. Notably, this finding lacked statistical significance (p-value = 0.391), and the model accounted for only a tiny fraction of the variance in lifespan (Multiple R-squared: 0.00217). These results imply that factors beyond our current scope may play more pivotal roles in influencing longevity.
+
+These results suggest that although physical activity is clearly good for health, there is no statistically significant correlation between it and longer life expectancy. Therefore, taking into account the wider range of factors impacting lifetime, any proposal for an intervention aimed at improving longevity that just focuses on increasing moderate physical activity should be further researched and see maybe additional or different factors.
 
 
-# BMI realtionship as an indciaiton for health in relation to moderate activity level (Question no. 4) 
+# BMI Relationship with Moderate Activity Level (Question no. 4) 
 Question four explores the hypothesis that BMI decreases as the proportion of moderate activity increases. It involves using appropriate visualizations and a linear regression model to test this hypothesis and quantify the relationship, providing insights into the impact of moderate activity on BMI.
-
 
 To perform the linear regression analysis exploring the relationship between BMI and moderate activity, and to visualize this relationship, you can use the following R code:
 
@@ -325,7 +304,6 @@ ggplot(carehome_data, aes(x = moderate_activity, y = bmi)) +
        x = "Moderate Activity",
        y = "BMI")
 ```
-
 The linear regression analysis results indicate a significant relationship between moderate activity and BMI. The coefficient for moderate activity is -0.100816, with a highly significant p-value (<2e-16), suggesting that for every unit increase in moderate activity, BMI decreases by approximately 0.101 units. The negative sign of the coefficient confirms that the relationship is inverse, aligning with the hypothesis that increased moderate activity is associated with lower BMI.
 
 The intercept, 29.938631, represents the estimated BMI when moderate activity is zero. The t-value for the moderate activity coefficient, -12.29, further emphasizes its statistical significance.
@@ -334,5 +312,15 @@ The model's residual standard error is 1.502, indicating the average distance of
 
 Overall, the analysis provides strong evidence supporting the hypothesis that higher levels of moderate activity are associated with lower BMI values, making a compelling case for promoting moderate physical activity as part of weight management strategies.
 
+As we referred earlier as Body Mass Index (BMI) can be an indication for better health outcome as per the reference [@ding_relationship_2020], and we can find higher moderate activity is directly related with lower BMI. 
 
+#  Conclusion
+We acknowledge the well-established benefits of physical activity on overall health, which may indirectly influence longevity through factors like improved cardiovascular health and weight management. Despite the lack of a significant direct link between physical activity levels, including moderate activity, and increased longevity, our study's conclusion takes this relationship into account. Findings also show an intriguing correlation between BMI and physical activity, indicating that regular physical activity may help sustain a lower BMI, which is linked to increased longevity.
+
+The complex relationship that exists between longevity, BMI, and physical activity highlights the diverse range of factors that affect health and lifespan. It suggests that although moderate exercise by itself might not be able to prolong life, it is still very important for preserving a healthy body mass index and improving general wellbeing. 
+
+In order to fully understand the complex web of influences on longevity, future study should adopt a more holistic approach and take a wider range of factors into account, such as physical activity and BMI, among others. This thorough comprehension will be essential for creating recommendations and actions in health care that are more successful.
+
+----------------------------------
+# References 
 
